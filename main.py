@@ -86,7 +86,7 @@ class Member():
      
         return Transformation_Matrix
     
-    def First_Order_Local_Stiffness_Matrix_2(self):
+    def First_Order_Local_Stiffness_Matrix_2(self, NormalForce = None):
         """ This Stiffness Matrix is from Lecture Notes of Stability of Structure 
         - typically used for 2nd order analysis"""
         length=self.length()
@@ -106,10 +106,10 @@ class Member():
          
         return Stiffness_Matrix
      
-    def First_Order_Global_Stiffness_Matrix_2(self):    
+    def First_Order_Global_Stiffness_Matrix_2(self, NormalForce = None):    
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.First_Order_Local_Stiffness_Matrix_2()) @ np.array(self.Transformation_Matrix())
 
-    def First_Order_Local_Stiffness_Matrix_1(self):   
+    def First_Order_Local_Stiffness_Matrix_1(self, NormalForce = None):   
         """ This Stiffness Matrix is from NPTEL - Matrix Method """
         length=self.length()
         ma11=self.area*self.youngs_modulus/length
@@ -128,11 +128,11 @@ class Member():
          
         return Stiffness_Matrix
      
-    def First_Order_Global_Stiffness_Matrix_1(self):    
+    def First_Order_Global_Stiffness_Matrix_1(self, NormalForce = None):    
 
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.First_Order_Local_Stiffness_Matrix_1()) @ np.array(self.Transformation_Matrix())
 
-    def Second_Order_Reduction_Matrix(self,NormalForce):
+    def Second_Order_Reduction_Matrix(self, NormalForce):
 
         length=self.length()
         ReductionMatrix=[[0,0,0,0,0,0],
@@ -151,7 +151,7 @@ class Member():
         SecondOrderLocalStiffnessMatrix = np.array(self.First_Order_Local_Stiffness_Matrix_2()) + self.Second_Order_Reduction_Matrix(NormalForce)
         return SecondOrderLocalStiffnessMatrix
     
-    def Second_Order_GLobal_Stiffness_Matrix(self, NormalForce):
+    def Second_Order_Global_Stiffness_Matrix(self, NormalForce):
 
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.Seconf_Order_Local_Stiffness_Matrix(NormalForce)) @ np.array(self.Transformation_Matrix())
 
@@ -327,32 +327,47 @@ class Computer():
     def DisplacementVector():
         return None
     
-    def DisplacementVectorDict():
-        return None
-    
+    def ModelDisplacementList_To_Dict(Displacement,UnConstrainedDoF,TotalDoF):
+
+        DisplacementDict={}
+        for i in range(len(TotalDoF())):
+            if(i<(len(UnConstrainedDoF()))):
+                DisplacementDict[str(TotalDoF()[i])] = Displacement[i]
+            else:
+                DisplacementDict[str(TotalDoF()[i])]=0
+        return DisplacementDict
+
     def SupportForceVector():
         return None
 
-    def MemberForceLocal(MemberNumber, ForceVectorDict, Members, MemberDisplacement ):
+    def ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,Members):
         MemberNo = int(MemberNumber)
-        MemberFixedEndForce = [ForceVectorDict[Members[MemberNo-1].DoFNumber()[0]],
-                             ForceVectorDict[Members[MemberNo-1].DoFNumber()[1]],
-                             ForceVectorDict[Members[MemberNo-1].DoFNumber()[2]],
-                             ForceVectorDict[Members[MemberNo-1].DoFNumber()[3]],
-                             ForceVectorDict[Members[MemberNo-1].DoFNumber()[4]],
-                             ForceVectorDict[Members[MemberNo-1].DoFNumber()[5]]]
+        MemberDisplacement = [DisplacementDict[str(Members[MemberNo-1].DoFNumber()[0])],
+                             DisplacementDict[str(Members[MemberNo-1].DoFNumber()[1])],
+                             DisplacementDict[str(Members[MemberNo-1].DoFNumber()[2])],
+                             DisplacementDict[str(Members[MemberNo-1].DoFNumber()[3])],
+                             DisplacementDict[str(Members[MemberNo-1].DoFNumber()[4])],
+                             DisplacementDict[str(Members[MemberNo-1].DoFNumber()[5])]]
+        return MemberDisplacement
     
-        MemberForce = np.dot(np.dot(Members[MemberNo-1].First_Order_Local_Stiffness_Matrix_1(),Members[MemberNo-1].Transformation_Matrix()),MemberDisplacement(MemberNumber))
-
+    
+    def MemberDisplacement_To_ForceLocal(StiffnessMatrixType, MemberNumber, Members, MemberDisplacement, Loads, NormalForce = None):
+        
+        MemberNo = int(MemberNumber)
+        MemberForce = np.dot(
+                    np.dot(
+                    getattr(Members[MemberNo-1],StiffnessMatrixType)(NormalForce),Members[MemberNo-1].Transformation_Matrix()),
+                    MemberDisplacement)
         FixedendForce = [0, 0, 0, 0, 0, 0]
-        for a in range(len(self.Loads)):
-            if(int(self.Loads[a].AssignedTo[-1]) == self.MemberNo):
-                FixedendForcei = list(self.Loads[a].EquivalentLoad().values())[:-1]
+        for a in range(len(Loads)):
+            if(int(Loads[a].AssignedTo[-1]) == MemberNo):
+                FixedendForcei = list(Loads[a].EquivalentLoad().values())[:-1]
                 FixedendForcei= [x[0] for x in FixedendForcei]
                 FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
         MemberForce = np.round(MemberForce - FixedendForce,2)
 
         return MemberForce
+
 
 class Model():
     
@@ -790,7 +805,7 @@ class MemberResponse(GlobalResponse):
         
         self.MemberNo = int(MemberNumber)
         #MOMENT AND SHEAR FORCE
-        if(Members[self.MemberNo-1].alpha()>=0):
+        if(self.Members[self.MemberNo-1].alpha()>=0):
             fem1=self.MemberForceLocal(self.MemberNo)[2] #Fixed End Moment
             fem2=self.MemberForceLocal(self.MemberNo)[5]
         else:
@@ -870,7 +885,7 @@ class MemberResponse(GlobalResponse):
         plt.show()
 
 
-class GlobalResponse2(MemberResponse):
+class SecondOrderGlobalResponse(Model):
 
     def NormalForce(self):
 
@@ -909,7 +924,7 @@ class GlobalResponse2(MemberResponse):
                         if(self.Members[mn].DoFNumber()[mr]==Mr):
                             for mc in range(0,6):
                                 if(self.Members[mn].DoFNumber()[mc]==Mc):
-                                    x=self.Members[mn].Second_Order_Global_Stiffness_Matrix_1(NormalForceList[mn])[mc][mr]
+                                    x=self.Members[mn].Second_Order_Global_Stiffness_Matrix(NormalForceList[mn])[mc][mr]
                                     y=y+x
                 R1.append(y)
             C1.append(R1)
@@ -935,17 +950,27 @@ class GlobalResponse2(MemberResponse):
     def SecondOrderDisplacement(self, iteration_steps):
 
         NoMem = len(self.Members)
-        for j in range(0,iteration_steps):
-            for i in range(NoMem):
-                af=self.Members[i].alpha()*MemForce[i][0]+self.Members[i].beta()*MemForce[i][1] # Axial Force
-                NorForList.append(af)
 
-            SecondOrderDisplacement=np.dot((np.linalg.inv(np.array(self.GlobalOrderStiffnessMatrixCondensed(NorForList)))),self.ForceVector())
-            SecondOrderSupportForces = np.dot(np.array(self.GlobalStiffnessMatrixCondensedA21(NorForList)),SecondOrderDisplacement)
-            MemForce=F[1]
-            #print(ScOGSMConden)
-            print("Member Force",MemForce)
+        #1st iteration
+        FirstOderDisplacement = np.dot((np.linalg.inv(np.array(self.GlobalStiffnessMatrixCondensed()))),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Global_Stiffness_Matrix_2", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(MemberForceLocal[0])
+
+        for j in range(0,iteration_steps):
+
+            SecondOrderDisplacement=np.dot((np.linalg.inv(np.array(self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)))),self.ForceVector())
+            DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+            
+            NorForList1 = NorForList
             NorForList=[]
+            for i in range(NoMem):
+                SecondOrderMemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+                SecondOrderMemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("Second_Order_Global_Stiffness_Matrix", i+1, self.Members, SecondOrderMemberDisplacement, self.Loads, NorForList1[i])
+                NorForList.append(SecondOrderMemberForceLocal[0])
         
         return SecondOrderDisplacement
 
@@ -1061,10 +1086,10 @@ class Senstivity(GlobalResponse):
 
 
 
-"""
-#Sub Model Parts - Basic essential for building a model
+
+#Model Parts - Basic essential for building a model
 Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Hinged Support"),
-        Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hing Joint"),
+        Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
         Node(Node_Number=3,xcoordinate=20,ycoordinate=0,Support_Condition="Hinged Support"),
         ] 
 
@@ -1080,18 +1105,18 @@ Loads = [NeumanBC(type="PL",Magnitude=5,Distance1=5,AssignedTo="Member 1", Membe
 
 #main Model part - Main mode part includes sub model part
 Model1 = Model(Points = Points, Members = Members, Loads = Loads)
-GlobalRes = GlobalResponse(Points = Points, Members = Members, Loads = Loads)
-NodalRes = NodalResponse(Points = Points, Members = Members, Loads = Loads)
-MemberRes = MemberResponse(Points = Points, Members = Members, Loads = Loads)
+GlobalRes1 = GlobalResponse(Points = Points, Members = Members, Loads = Loads)
+NodalRes1 = NodalResponse(Points = Points, Members = Members, Loads = Loads)
+MemberRes1 = MemberResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = Senstivity(Points = Points, Members = Members, Loads = Loads)
+SecondOrderResponse1 = SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 
 Model1.PlotGlobalModel()
-#print(MemberRes.PlotMemberBMD(2))
-print(Sensitivity1.NodeYSensitivity(1,0.001))
-print(Sensitivity1.GlobalSizeSensitivity("Bending"))
-
 Sensitivity1.PlotSensitivity("Bending")
-"""
+print(SecondOrderResponse1.SecondOrderDisplacement(10))
+
+
+
 
 
 #LSM=Stiffness_Matrix(Members[0])
@@ -1113,6 +1138,9 @@ Sensitivity1.PlotSensitivity("Bending")
 #print(MemberRes.MemberDisplacement(MemberNumber = 1))
 #print(MemberRes.MemberForce(MemberNumber = 1))
 #print(MemberRes.PlotMemberBMD(MemberNumber = 1))
+#print(MemberRes.PlotMemberBMD(2))
+#print(Sensitivity1.NodeYSensitivity(1,0.001))
+#print(Sensitivity1.GlobalSizeSensitivity("Bending"))
 
 
 
