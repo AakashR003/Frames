@@ -811,7 +811,6 @@ class MemberResponse(GlobalResponse):
         else:
             fem1=self.MemberForceLocal(self.MemberNo)[5]
             fem2=self.MemberForceLocal(self.MemberNo)[2]
-        print(fem1,fem2)
 
         amp=0
         abcd1=[]
