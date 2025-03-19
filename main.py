@@ -830,8 +830,8 @@ class MemberResponse(GlobalResponse):
             mapi=(amp/self.Members[self.MemberNo-1].length()*(-fem2-fem1))+fem1
             abcd2.append(mapi)
             self.amplist.append(amp)
-            amp=amp+self.Members[self.MemberNo-1].length()/999    
-        abcd3=[-abcd1[n]+abcd2[n] for n in range(0,1000)]
+            amp=amp+self.Members[self.MemberNo-1].length()/999 
+        abcd3=[abcd1[n]+abcd2[n] for n in range(0,1000)]
         for i in range(0,999):
             ax=(abcd3[i+1]-abcd3[i])/(self.amplist[i+1]-self.amplist[i])
             abcd4.append(ax)
@@ -841,6 +841,7 @@ class MemberResponse(GlobalResponse):
         return self.MemberMoment
     
     def MemberSFD(self, MemberNumber):
+        self.MemberBMD(MemberNumber)
         
         return self.MemberShear
     
@@ -1111,9 +1112,19 @@ MemberRes1 = MemberResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = Senstivity(Points = Points, Members = Members, Loads = Loads)
 SecondOrderResponse1 = SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 
+
 Model1.PlotGlobalModel()
-Sensitivity1.PlotSensitivity("Bending")
-print(SecondOrderResponse1.SecondOrderDisplacement(10))
+print("Node1",NodalRes1.NodeForce(1))
+print("Node3",NodalRes1.NodeForce(3))
+print("NOde2",NodalRes1.NodeDisplacement(2))
+print("mem1",MemberRes1.MemberForceGlobal(1))
+print("mem2",MemberRes1.MemberForceGlobal(2))
+print("mem1",MemberRes1.MemberForceLocal(1))
+print("mem2",MemberRes1.MemberForceLocal(2))
+print("mem1",MemberRes1.MemberBMD(1))
+print(len(MemberRes1.MemberBMD(1)))
+MemberRes1.PlotMemberBMD(1)
+
 
 
 
