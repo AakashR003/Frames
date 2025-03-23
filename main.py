@@ -155,6 +155,7 @@ class Member():
 
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.Second_Order_Local_Stiffness_Matrix(NormalForce)) @ np.array(self.Transformation_Matrix())
 
+
 class Stiffness_Matrix():
     
     def __init__ (self,member):
@@ -983,14 +984,14 @@ class SecondOrderGlobalResponse(Model):
         self.DisplacementDict={}
         for i in range(len(self.TotalDoF())):
             if(i<(len(self.UnConstrainedDoF()))):
-                self.DisplacementDict[str(self.TotalDoF()[i])] = self.SecondOrderDisplacementVector(10)[i]
+                self.DisplacementDict[str(self.TotalDoF()[i])] = self.SecondOrderDisplacementVector(5)[i]
             else:
                 self.DisplacementDict[str(self.TotalDoF()[i])]=0
         return self.DisplacementDict
     
     def SecondOrderSupportForcesVector(self):
 
-        self.SecondOrderDisplacementVector(10)
+        self.SecondOrderDisplacementVector(5)
         SupportForces = np.dot(np.array(self.SecondOrderGlobalStiffnessMatrixCondensedA21(self.NormalForceList)),self.SecondOrderDisplacementVector())
         
         self.ForceVectorDict={}
@@ -1040,7 +1041,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
     
     def MemberDisplacement(self, MemberNumber):
         MemberNo = int(MemberNumber)
-        self.SecondOrderDisplacementVector(10)
+        self.SecondOrderDisplacementVector(5)
         MemberDisplacement = [self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[0])],
                              self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[1])],
                              self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[2])],
@@ -1053,7 +1054,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
     def MemberForceLocal(self, MemberNumber):
         MemberNo = int(MemberNumber)
         #self.ForceVector()
-        self.SecondOrderDisplacementVector(10)
+        self.SecondOrderDisplacementVector(5)
 
         """
         MemberFixedEndForce = [self.ForceVectorDict[self.Members[MemberNo-1].DoFNumber()[0]],
@@ -1115,7 +1116,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
             abcd2.append(mapi)
             self.amplist.append(amp)
             amp=amp+self.Members[MemberNo-1].length()/999    
-        abcd3=[-abcd1[n]+abcd2[n] for n in range(0,1000)]
+        abcd3=[abcd1[n]+abcd2[n] for n in range(0,1000)]
         for i in range(0,999):
             ax=(abcd3[i+1]-abcd3[i])/(self.amplist[i+1]-self.amplist[i])
             abcd4.append(ax)
@@ -1167,8 +1168,6 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
         plt.legend()
         plt.title(f'Moment Diagram for Member {MemberNo}')
         plt.show()
-
-
 
 
 class Senstivity(GlobalResponse):
@@ -1264,18 +1263,19 @@ class Senstivity(GlobalResponse):
 
 
 #Model Parts - Basic essential for building a model
-Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Hinged Support"),
-        Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
-        Node(Node_Number=3,xcoordinate=20,ycoordinate=0,Support_Condition="Hinged Support"),
-        ] 
-
-Members = [Member(Beam_Number=1,Start_Node=Points[0],End_Node=Points[1],Area=1,Youngs_Modulus=1,Moment_of_Inertia=1),
-          Member(Beam_Number=2,Start_Node=Points[1],End_Node=Points[2],Area=1,Youngs_Modulus=1,Moment_of_Inertia=1),
-           ]
-
-Loads = [NeumanBC(type="PL",Magnitude=5,Distance1=5,AssignedTo="Member 1", Members = Members),
-        NeumanBC(type="UDL",Magnitude=5,Distance1=0, Distance2 = 10, AssignedTo="Member 2", Members = Members)
-        ] 
+Points = [
+    Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
+    Node(Node_Number=2, xcoordinate=0, ycoordinate=10, Support_Condition="Rigid Joint"),
+    Node(Node_Number=3, xcoordinate=10, ycoordinate=10, Support_Condition="Hinged Support")
+]
+Members = [
+    Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000, Moment_of_Inertia=0.000675),
+    Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000, Moment_of_Inertia=0.000675),
+] # square cross section - 0.3 x 0.3, units N, m
+Loads = [
+    #NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=10, AssignedTo="Member 1", Members = Members),
+    NeumanBC(type="UDL", Magnitude=500, Distance1=0, Distance2=10, AssignedTo="Member 2", Members = Members)
+]
 
 
 
@@ -1286,6 +1286,7 @@ NodalRes1 = NodalResponse(Points = Points, Members = Members, Loads = Loads)
 MemberRes1 = MemberResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = Senstivity(Points = Points, Members = Members, Loads = Loads)
 SecondOrderResponse1 = SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
+SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
 
 
 Model1.PlotGlobalModel()
@@ -1293,12 +1294,10 @@ print("Node1",NodalRes1.NodeForce(1))
 print("Node3",NodalRes1.NodeForce(3))
 print("NOde2",NodalRes1.NodeDisplacement(2))
 print("mem1",MemberRes1.MemberForceGlobal(1))
-print("mem2",MemberRes1.MemberForceGlobal(2))
-print("mem1",MemberRes1.MemberForceLocal(1))
-print("mem2",MemberRes1.MemberForceLocal(2))
-print("mem1",MemberRes1.MemberBMD(1))
-print(len(MemberRes1.MemberBMD(1)))
+MemberRes1.PlotMemberBMD(2)
 MemberRes1.PlotMemberBMD(1)
+SecondOrderMemberResponse1.PlotMemberBMD(2)
+SecondOrderMemberResponse1.PlotMemberBMD(1)
 
 
 
