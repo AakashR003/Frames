@@ -3,109 +3,115 @@ from main import Node, Member, NeumanBC
 
 # Finite Element maker
 def divide_into_finite_elements(nodes, members, loads, num_elements):
-    # Create new nodes and members
-    new_nodes = []
+    new_nodes = nodes.copy()
     new_members = []
+    new_loads = []
     
-    # Copy fixed nodes first (they need to keep their support conditions)
-    node_counter = 1
-    original_node_map = {}  # Maps original node numbers to their indices in new_nodes
-    
-    # First add all original nodes to new_nodes (we'll add intermediate nodes later)
-    for node in nodes:
-        new_node = Node(Node_Number=node_counter, 
-                       xcoordinate=node.xcoordinate, 
-                       ycoordinate=node.ycoordinate, 
-                       Support_Condition=node.Support_Condition)
-        new_nodes.append(new_node)
-        original_node_map[node.Node_Number] = node_counter - 1  # store index (0-based)
-        node_counter += 1
-    
-    # Process each member to divide it into elements
-    for member in members:
-        start_node = member.Start_Node
-        end_node = member.End_Node
+    node_counter = max(node.node_number for node in nodes) + 1
+    member_mapping = {}
+
+    # Divide members and create new nodes
+    for member_idx, member in enumerate(members):
+        start = member.Start_Node
+        end = member.End_Node
+        total_length = member.length()
         
-        # Calculate increments
-        dx = (end_node.xcoordinate - start_node.xcoordinate) / num_elements
-        dy = (end_node.ycoordinate - start_node.ycoordinate) / num_elements
+        dx = (end.xcoordinate - start.xcoordinate) / num_elements
+        dy = (end.ycoordinate - start.ycoordinate) / num_elements
         
-        # Get the start node index in new_nodes
-        if member.Start_Node.Node_Number in original_node_map:
-            current_start_idx = original_node_map[member.Start_Node.Node_Number]
-        else:
-            # Shouldn't happen if input is correct
-            raise ValueError("Start node not found in original nodes")
+        member_mapping[member_idx] = []
+        prev_node = start
         
-        # Create intermediate nodes and members
         for i in range(1, num_elements):
-            # Create new node
-            x = start_node.xcoordinate + i * dx
-            y = start_node.ycoordinate + i * dy
-            new_node = Node(Node_Number=node_counter, 
-                           xcoordinate=x, 
-                           ycoordinate=y, 
-                           Support_Condition="None")
+            new_node = Node(
+                Node_Number=node_counter,
+                xcoordinate=start.xcoordinate + i*dx,
+                ycoordinate=start.ycoordinate + i*dy,
+                Support_Condition="Rigid Joint"
+            )
             new_nodes.append(new_node)
             
-            # Create member from current_start to this new node
-            new_member = Member(Beam_Number=len(new_members)+1,
-                              Start_Node=new_nodes[current_start_idx],
-                              End_Node=new_node,
-                              Area=member.Area,
-                              Youngs_Modulus=member.Youngs_Modulus,
-                              Moment_of_Inertia=member.Moment_of_Inertia)
+            new_member = Member(
+                Beam_Number=len(new_members)+1,
+                Start_Node=prev_node,
+                End_Node=new_node,
+                Area=member.area,
+                Youngs_Modulus=member.youngs_modulus,
+                Moment_of_Inertia=member.moment_of_inertia
+            )
             new_members.append(new_member)
+            member_mapping[member_idx].append(new_member)
             
-            # Update current_start for next iteration
-            current_start_idx = len(new_nodes) - 1
+            prev_node = new_node
             node_counter += 1
         
-        # Add final member segment
-        if member.End_Node.Node_Number in original_node_map:
-            end_idx = original_node_map[member.End_Node.Node_Number]
-        else:
-            # Shouldn't happen if input is correct
-            raise ValueError("End node not found in original nodes")
-        
-        new_member = Member(Beam_Number=len(new_members)+1,
-                          Start_Node=new_nodes[current_start_idx],
-                          End_Node=new_nodes[end_idx],
-                          Area=member.Area,
-                          Youngs_Modulus=member.Youngs_Modulus,
-                          Moment_of_Inertia=member.Moment_of_Inertia)
-        new_members.append(new_member)
-    
-    # Process loads - distribute point loads to nearest node
-    new_loads = []
+        # Add final segment
+        final_member = Member(
+            Beam_Number=len(new_members)+1,
+            Start_Node=prev_node,
+            End_Node=end,
+            Area=member.area,
+            Youngs_Modulus=member.youngs_modulus,
+            Moment_of_Inertia=member.moment_of_inertia
+        )
+        new_members.append(final_member)
+        member_mapping[member_idx].append(final_member)
+
+    # Process loads
     for load in loads:
-        if load.type == "PL" and load.AssignedTo.startswith("Member"):
-            member_num = int(load.AssignedTo.split()[1])
-            original_member = members[member_num - 1]
-            
-            # Calculate the position of the load in the original member
-            total_length = ((original_member.End_Node.xcoordinate - original_member.Start_Node.xcoordinate)**2 +
-                          (original_member.End_Node.ycoordinate - original_member.Start_Node.ycoordinate)**2)**0.5
-            load_position = load.Distance1 / total_length  # normalized position [0,1]
-            
-            # Find which new element this would be in
-            element_num = int(load_position * num_elements)
-            element_num = min(max(element_num, 0), num_elements-1)  # clamp to valid range
-            
-            # Find the corresponding new member
-            first_new_member_for_original = (member_num - 1) * num_elements
-            target_member_idx = first_new_member_for_original + element_num
-            target_member = new_members[target_member_idx]
-            
-            # Create new load at the nearest node (we'll put it at the end node of the element)
-            new_load = NeumanBC(type="PL",
-                              Magnitude=load.Magnitude,
-                              Distance1=0,  # point load at node
-                              AssignedTo=f"Node {target_member.End_Node.Node_Number}",
-                              Members=None)  # Not assigned to member directly
-            new_loads.append(new_load)
-        else:
-            # For other load types, just copy them (may need more sophisticated handling)
+        if not hasattr(load, 'AssignedTo') or not load.AssignedTo.startswith('Member'):
             new_loads.append(load)
-    
+            continue
+            
+        member_num = int(load.AssignedTo.split()[1]) - 1
+        original_member = members[member_num]
+        total_length = original_member.length()
+        sub_members = member_mapping[member_num]
+        sub_length = total_length / num_elements
+        
+        if load.type == "PL":
+            # Point Load Handling
+            abs_position = load.Distance1
+            sub_idx = min(int(abs_position // sub_length), num_elements-1)
+            local_position = abs_position - (sub_idx * sub_length)
+            
+            new_load = type(load)(
+                type="PL",
+                Magnitude=load.Magnitude,
+                Distance1=local_position,
+                AssignedTo=f"Member {sub_members[sub_idx].Beam_Number}",
+                Members=new_members
+            )
+            new_loads.append(new_load)
+            
+        elif load.type == "UDL":
+            # Uniform Load Handling
+            udl_start = getattr(load, 'Distance1', 0)
+            udl_end = getattr(load, 'Distance2', total_length)
+            
+            for i, sub_member in enumerate(sub_members):
+                sub_start = i * sub_length
+                sub_end = (i+1) * sub_length
+                
+                # Calculate overlap with UDL region
+                overlap_start = max(udl_start, sub_start)
+                overlap_end = min(udl_end, sub_end)
+                
+                if overlap_start >= overlap_end:
+                    continue  # No overlap
+                
+                # Convert to local coordinates
+                local_start = overlap_start - sub_start
+                local_end = overlap_end - sub_start
+                
+                new_load = type(load)(
+                    type="UDL",
+                    Magnitude=load.Magnitude,  # Same intensity (force/unit-length)
+                    Distance1=local_start,
+                    Distance2=local_end,
+                    AssignedTo=f"Member {sub_member.Beam_Number}",
+                    Members=new_members
+                )
+                new_loads.append(new_load)
+
     return new_nodes, new_members, new_loads
