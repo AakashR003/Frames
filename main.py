@@ -1177,7 +1177,7 @@ NodalRes1 = NodalResponse(Points = Points, Members = Members, Loads = Loads)
 MemberRes1 = MemberResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = Senstivity(Points = Points, Members = Members, Loads = Loads)
 SecondOrderResponse1 = SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
-SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
+#SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
 
 
 Model1.PlotGlobalModel()
@@ -1187,8 +1187,8 @@ print("NOde2",NodalRes1.NodeDisplacement(2))
 print("mem1",MemberRes1.MemberForceGlobal(1))
 MemberRes1.PlotMemberBMD(2)
 MemberRes1.PlotMemberBMD(1)
-SecondOrderMemberResponse1.PlotMemberBMD(2)
-SecondOrderMemberResponse1.PlotMemberBMD(1)
+#SecondOrderMemberResponse1.PlotMemberBMD(2)
+#SecondOrderMemberResponse1.PlotMemberBMD(1)
 
 
 
