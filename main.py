@@ -11,6 +11,8 @@ from scipy.linalg import eig
 import importlib
 import math
 
+#import FiniteElementDivisor
+
 
 class Node():
     
@@ -224,10 +226,11 @@ class NeumanBC():
         self.AssignedTo = kwargs.get("AssignedTo", None)
         self.Members = kwargs.get("Members", None)
         
-        self.MemberNo = int(self.AssignedTo[-1])-1
+        self.MemberNo = int(self.AssignedTo.split()[1])-1
     
     def EquivalentLoad(self):
         
+        FEDivision = 1000 # Finite element Division
         self.frml=[] # Free moment Distribution(Simply supported) along beam 
         tarea=0
         tyda=0
@@ -241,12 +244,12 @@ class NeumanBC():
                 else:
                     mppl=0
                 m=va*mp+mppl
-                area=m*(self.Members[self.MemberNo].length()/1000)
+                area=m*(self.Members[self.MemberNo].length()/FEDivision)
                 yda=area*mp
                 tarea=area+tarea
                 tyda=yda+tyda
                 self.frml.append(m)
-                mp=mp+(self.Members[self.MemberNo].length()/1000)
+                mp=mp+(self.Members[self.MemberNo].length()/FEDivision)
             if(tarea==0):
                 centroid=0
             else:
@@ -264,12 +267,12 @@ class NeumanBC():
                 else:
                     mpu=0
                 m=va*mp+mpu
-                area=m*(self.Members[self.MemberNo].length()/1000)
+                area=m*(self.Members[self.MemberNo].length()/FEDivision)
                 yda=area*mp
                 tarea=area+tarea
                 tyda=yda+tyda
                 self.frml.append(m)
-                mp=mp+(self.Members[self.MemberNo].length()/1000)
+                mp=mp+(self.Members[self.MemberNo].length()/FEDivision)
             if(tarea==0):
                 centroid=0
             else:
@@ -400,7 +403,7 @@ class Computer():
                     MemberDisplacement)
         FixedendForce = [0, 0, 0, 0, 0, 0]
         for a in range(len(Loads)):
-            if(int(Loads[a].AssignedTo[-1]) == MemberNo):
+            if(int(Loads[a].AssignedTo.split()[1]) == MemberNo):
                 FixedendForcei = list(Loads[a].EquivalentLoad().values())[:-1]
                 FixedendForcei= [x[0] for x in FixedendForcei]
                 FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
@@ -654,7 +657,7 @@ class Model():
         :param max_load_magnitude: Maximum load magnitude for scaling.
         """
         # Extract the member number from the AssignedTo attribute (e.g., "Member 1" -> 1)
-        member_number = int(load.AssignedTo[-1]) - 1  # Convert to zero-based index
+        member_number = int(load.AssignedTo.split()[1]) - 1  # Convert to zero-based index
         if member_number < 0 or member_number >= len(self.Members):
             raise ValueError(f"Invalid member number {member_number + 1} for load: {load}")
 
@@ -825,7 +828,7 @@ class MemberResponse(GlobalResponse):
         MemberForce = np.dot(np.dot(self.Members[self.MemberNo-1].First_Order_Local_Stiffness_Matrix_1(),self.Members[self.MemberNo-1].Transformation_Matrix()),self.MemberDisplacement(MemberNumber))
         FixedendForce = [0, 0, 0, 0, 0, 0]
         for a in range(len(self.Loads)):
-            if(int(self.Loads[a].AssignedTo[-1]) == self.MemberNo):
+            if(int(self.Loads[a].AssignedTo.split()[1]) == self.MemberNo):
                 FixedendForcei = list(self.Loads[a].EquivalentLoad().values())[:-1]
                 FixedendForcei= [x[0] for x in FixedendForcei]
                 FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
@@ -843,6 +846,7 @@ class MemberResponse(GlobalResponse):
     
     def MemberBMD(self, MemberNumber):
         
+        FEDivision = 1000
         self.MemberNo = int(MemberNumber)
         #MOMENT AND SHEAR FORCE
         if(self.Members[self.MemberNo-1].alpha()>=0):
@@ -861,18 +865,18 @@ class MemberResponse(GlobalResponse):
         abcd4=[]
         self.amplist=[]
         for a in range(len(self.Loads)):
-            if(int(self.Loads[a].AssignedTo[-1]) == self.MemberNo):
+            if(int(self.Loads[a].AssignedTo.split()[1]) == self.MemberNo):
                 if(self.Members[self.MemberNo-1].alpha()>=0):
-                    abcd1=[abcd1[m]+self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(1000)]
+                    abcd1=[abcd1[m]+self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(FEDivision)]
                 else:
-                    abcd1=[abcd1[m]-self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(1000)]
+                    abcd1=[abcd1[m]-self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(FEDivision)]
         while(amp<self.Members[self.MemberNo-1].length()):
             mapi=(amp/self.Members[self.MemberNo-1].length()*(-fem2-fem1))+fem1
             abcd2.append(mapi)
             self.amplist.append(amp)
-            amp=amp+self.Members[self.MemberNo-1].length()/999 
-        abcd3=[abcd1[n]+abcd2[n] for n in range(0,1000)]
-        for i in range(0,999):
+            amp=amp+self.Members[self.MemberNo-1].length()/(FEDivision - 1) 
+        abcd3=[abcd1[n]+abcd2[n] for n in range(0,FEDivision)]
+        for i in range(0,(FEDivision-1)):
             ax=(abcd3[i+1]-abcd3[i])/(self.amplist[i+1]-self.amplist[i])
             abcd4.append(ax)
         self.MemberMoment = abcd3
@@ -1024,16 +1028,13 @@ class SecondOrderGlobalResponse(Model):
     def BucklingEigenLoad(self):
 
         #preparing variables for computation
-        NormaldirectionDOFList = [i.dof_x for i in self.Points]
         gr_buck = self.UnConstrainedDoF()
-        print("DOF",gr_buck)
         print("NormalForce", self.NormalForce())
         BGSMConden = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
-        print(BGSMConden)
         BGSMM_1st_Ord_condensed = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         CriticalLoad , mode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
 
-        return min(filter(math.isfinite, [z.real for z in CriticalLoad])), CriticalLoad
+        return min(filter(math.isfinite, [abs(z.real) for z in CriticalLoad])), CriticalLoad
 
 
 class Senstivity(GlobalResponse):
@@ -1128,6 +1129,7 @@ class Senstivity(GlobalResponse):
 
 
 
+"""
 #Model Parts - Basic essential for building a model
 Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Hinged Support"),
         Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
@@ -1142,6 +1144,8 @@ Loads = [NeumanBC(type="PL",Magnitude=5,Distance1=5,AssignedTo="Member 1", Membe
         NeumanBC(type="UDL",Magnitude=5,Distance1=0, Distance2 = 10, AssignedTo="Member 2", Members = Members)
         ] 
 
+
+#Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 10)
 
 
 #main Model part - Main mode part includes sub model part
@@ -1161,10 +1165,8 @@ print("mem1",MemberRes1.MemberForceGlobal(1))
 print("mem2",MemberRes1.MemberForceGlobal(2))
 print("mem1",MemberRes1.MemberForceLocal(1))
 print("mem2",MemberRes1.MemberForceLocal(2))
-print("mem1",MemberRes1.MemberBMD(1))
-print(len(MemberRes1.MemberBMD(1)))
 MemberRes1.PlotMemberBMD(1)
-
+"""
 
 
 
