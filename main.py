@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig
 import importlib
+import math
 
 
 class Node():
@@ -132,28 +133,58 @@ class Member():
 
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.First_Order_Local_Stiffness_Matrix_1()) @ np.array(self.Transformation_Matrix())
 
-    def Second_Order_Reduction_Matrix(self, NormalForce):
+    def Second_Order_Reduction_Matrix_1(self, NormalForce):
 
         length=self.length()
-        ReductionMatrix=[[0,0,0,0,0,0],
-            [0,6/5/length,-1/10,0,-6/5/length,-1/10],
-            [0,-1/10,2/15*length,0,1/10,-1/30*length],
-            [0,0,0,0,0,0],
-            [0,-6/5/length,1/10,0,6/5/length,1/10],
-            [0,-1/10,-1/30*length,0,1/10,2/15*length]]
+        ReductionMatrix=[[1/length,  0,           0,           -1/length,  0,            0           ],
+                        [0,          6/5/length,  1/10,         0,         -6/5/length,  1/10        ],
+                        [0,          1/10,        2/15*length,  0,         -1/10,        -1/30*length],
+                        [-1/length,  0,           0,            1/length,  0,            0           ],
+                        [0,          -6/5/length,  -1/10,        0,         6/5/length,   -1/10        ],
+                        [0,          1/10,        -1/30*length, 0,         -1/10,        2/15*length ]]
+        # reference -2 Matrix structural Analysis and Stability by William McGuire and Richard H. Gallagher
+        StiffnessReductionMatrix = np.array(ReductionMatrix) * NormalForce
         
+        return StiffnessReductionMatrix
+
+    def Second_Order_Global_Reduction_Matrix_1(self, NormalForce):
+        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Second_Order_Reduction_Matrix_1(NormalForce)) @ np.array(self.Transformation_Matrix())
+
+    def Second_Order_Local_Stiffness_Matrix_1(self,NormalForce):
+
+        SecondOrderLocalStiffnessMatrix = np.array(self.First_Order_Local_Stiffness_Matrix_1()) + self.Second_Order_Reduction_Matrix_1(NormalForce)
+        return SecondOrderLocalStiffnessMatrix
+    
+    def Second_Order_Global_Stiffness_Matrix_1(self, NormalForce):
+
+        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Second_Order_Local_Stiffness_Matrix_1(NormalForce)) @ np.array(self.Transformation_Matrix())
+
+    def Second_Order_Reduction_Matrix_2(self, NormalForce):
+
+        length=self.length()
+        ReductionMatrix=[[1/length,    0,           0,           -1/length,    0,            0           ],
+                         [0,           6/5/length,  -1/10,       0,           -6/5/length,  -1/10       ],
+                         [0,          -1/10,        2/15*length, 0,            1/10,        -1/30*length],
+                         [0,           0,           0,           0,            0,            0           ],
+                         [0,          -6/5/length,   1/10,       0,            6/5/length,   1/10        ],
+                         [0,          -1/10,       -1/30*length, 0,            1/10,        2/15*length ]]
+        # reference - 1.Stability Notes
         StiffnessReductionMatrix = np.array(ReductionMatrix) * NormalForce
         
         return StiffnessReductionMatrix
     
-    def Seconf_Order_Local_Stiffness_Matrix(self,NormalForce):
+    def Second_Order_Global_Reduction_Matrix_2(self, NormalForce):
+        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Second_Order_Reduction_Matrix_2(NormalForce)) @ np.array(self.Transformation_Matrix())
 
-        SecondOrderLocalStiffnessMatrix = np.array(self.First_Order_Local_Stiffness_Matrix_2()) + self.Second_Order_Reduction_Matrix(NormalForce)
+    def Second_Order_Local_Stiffness_Matrix_2(self,NormalForce):
+
+        SecondOrderLocalStiffnessMatrix = np.array(self.First_Order_Local_Stiffness_Matrix_2()) + self.Second_Order_Reduction_Matrix_2(NormalForce)
         return SecondOrderLocalStiffnessMatrix
     
-    def Second_Order_Global_Stiffness_Matrix(self, NormalForce):
+    def Second_Order_Global_Stiffness_Matrix_2(self, NormalForce):
 
-        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Seconf_Order_Local_Stiffness_Matrix(NormalForce)) @ np.array(self.Transformation_Matrix())
+        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Second_Order_Local_Stiffness_Matrix_2(NormalForce)) @ np.array(self.Transformation_Matrix())
+
 
 class Stiffness_Matrix():
     
@@ -244,6 +275,9 @@ class NeumanBC():
             else:
                 centroid=tyda/tarea
         
+        else:
+            raise ValueError(f"Unsupported load type: '{self.type}'")
+        
         self.mfab=((2*(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3)
         self.mfba=-(2*(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3
 
@@ -304,18 +338,22 @@ class Computer():
             C1.append(R1)
         return None
     
-    def GLobalStifnessMatrixCondensedA11(UnConstrainedDoF,NoMembers,Members,StiffnessMatrixType):
+    def GLobalStifnessMatrixCondensedA11(UnConstrainedDoF,Members,StiffnessMatrixType, NormalForce = None): #Stiffness matrix type - name of definition of Stiffness matrix in Member class
+        NoMembers = len(Members)
         C1=[]
-        for Mc in UnConstrainedDoF():
+        for Mc in UnConstrainedDoF:
             R1=[]
-            for Mr in UnConstrainedDoF():
+            for Mr in UnConstrainedDoF:
                 y=0
                 for mn in range(0,NoMembers):
                     for mr in range(0,6):
                         if(Members[mn].DoFNumber()[mr]==Mr):
                             for mc in range(0,6):
                                 if(Members[mn].DoFNumber()[mc]==Mc):
-                                    x = getattr(Members[mn],StiffnessMatrixType)[mc][mr]
+                                    if(NormalForce == None):
+                                        x = getattr(Members[mn],StiffnessMatrixType)()[mc][mr]
+                                    else:
+                                        x = getattr(Members[mn],StiffnessMatrixType)(NormalForce[mn])[mc][mr]
                                     y=y+x
                 R1.append(y)
             C1.append(R1)
@@ -348,11 +386,13 @@ class Computer():
                              DisplacementDict[str(Members[MemberNo-1].DoFNumber()[3])],
                              DisplacementDict[str(Members[MemberNo-1].DoFNumber()[4])],
                              DisplacementDict[str(Members[MemberNo-1].DoFNumber()[5])]]
-        return MemberDisplacement
-    
+        return MemberDisplacement 
     
     def MemberDisplacement_To_ForceLocal(StiffnessMatrixType, MemberNumber, Members, MemberDisplacement, Loads, NormalForce = None):
         
+        if "global" in StiffnessMatrixType.lower():
+            raise ValueError("Conversion to global is not allowed in this Function.")
+
         MemberNo = int(MemberNumber)
         MemberForce = np.dot(
                     np.dot(
@@ -644,7 +684,7 @@ class Model():
         :param max_load_magnitude: Maximum load magnitude for scaling.
         """
         # Extract the member number from the AssignedTo attribute (e.g., "Member 2" -> 2)
-        member_number = int(load.AssignedTo[-1]) - 1  # Convert to zero-based index
+        member_number = int(load.AssignedTo.split()[1]) - 1  # Convert to zero-based index
         if member_number < 0 or member_number >= len(self.Members):
             raise ValueError(f"Invalid member number {member_number + 1} for load: {load}")
 
@@ -693,6 +733,7 @@ class GlobalResponse(Model):
         return self.Displacement
     
     def DisplacementVectorDict(self):
+        self.DisplacementVector()
         self.DisplacementDict={}
         for i in range(len(self.TotalDoF())):
             if(i<(len(self.UnConstrainedDoF()))):
@@ -782,7 +823,6 @@ class MemberResponse(GlobalResponse):
                              self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[5]]]
     
         MemberForce = np.dot(np.dot(self.Members[self.MemberNo-1].First_Order_Local_Stiffness_Matrix_1(),self.Members[self.MemberNo-1].Transformation_Matrix()),self.MemberDisplacement(MemberNumber))
-
         FixedendForce = [0, 0, 0, 0, 0, 0]
         for a in range(len(self.Loads)):
             if(int(self.Loads[a].AssignedTo[-1]) == self.MemberNo):
@@ -890,12 +930,17 @@ class SecondOrderGlobalResponse(Model):
 
     def NormalForce(self):
 
-        NormalForceList = []
-        for i in range(0,self.Members):
-            MemberNumber = i+1
-            NormalForceList.append(self.MemberForceLocal(MemberNumber)()[0])
+        NoMem = len(self.Members)
 
-        return NormalForceList
+        FirstOderDisplacement = np.dot((np.linalg.inv(np.array(self.GlobalStiffnessMatrixCondensed()))),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(MemberForceLocal[0])
+
+        return NorForList
     
     def SecondOrderGlobalStiffnessMatrix(self, NormalForceList):
         C1=[]
@@ -961,6 +1006,7 @@ class SecondOrderGlobalResponse(Model):
             MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Global_Stiffness_Matrix_2", i+1, self.Members, MemberDisplacement, self.Loads )
             NorForList.append(MemberForceLocal[0])
 
+        #2nd iteration
         for j in range(0,iteration_steps):
 
             SecondOrderDisplacement=np.dot((np.linalg.inv(np.array(self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)))),self.ForceVector())
@@ -979,21 +1025,15 @@ class SecondOrderGlobalResponse(Model):
 
         #preparing variables for computation
         NormaldirectionDOFList = [i.dof_x for i in self.Points]
-        NoMem = len(self.Members)
+        gr_buck = self.UnConstrainedDoF()
+        print("DOF",gr_buck)
+        print("NormalForce", self.NormalForce())
+        BGSMConden = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
+        print(BGSMConden)
+        BGSMM_1st_Ord_condensed = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
+        CriticalLoad , mode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
 
-        new_list1 = [item for item in self.UnConstrainedDoF() if item not in NormaldirectionDOFList]
-        new_list2=self.ConstrainedDoF() + NormaldirectionDOFList
-        Detlist=im5.StaticCondensation(self.UnConstrainedDoF(),self.ConstrainedDoF(),ScOGSM)
-        #print("Determinant",np.linalg.det(Detlist))
-        AllScOGBMM=im7.LSMGlobal2ndOrder(NoMem,GeoMemProp,MatMemPropList,MemSuppNum,self.NormalForce())[2]
-        AllScOGSMM_1st_Order=im7.LSMGlobal1stOrder(NoMem,GeoMemProp,MatMemPropList,MemSuppNum)
-
-        gr_buck=new_list1+new_list2
-        BGSMConden=im5.StaticCondensation(new_list1,new_list2,im2.GlobalStiffMatr(AllScOGBMM,gr_buck,NoMem))
-        BGSMM_1st_Ord_condensed=im5.StaticCondensation(new_list1,new_list2,im2.GlobalStiffMatr(AllScOGSMM_1st_Order,gr_buck,NoMem))
-        criticalload , mode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
-
-        return None
+        return min(filter(math.isfinite, [z.real for z in CriticalLoad])), CriticalLoad
 
 
 class Senstivity(GlobalResponse):
