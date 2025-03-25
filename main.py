@@ -928,7 +928,6 @@ class MemberResponse(GlobalResponse):
 
 class SecondOrderGlobalResponse(Model):
 
-    """
     def NormalForce(self):
 
         NoMem = len(self.Members)
