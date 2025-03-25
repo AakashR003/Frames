@@ -230,7 +230,7 @@ class NeumanBC():
     
     def EquivalentLoad(self):
         
-        FEDivision = 1000 # Finite element Division
+        FEDivision = 20 # Finite element Division
         self.frml=[] # Free moment Distribution(Simply supported) along beam 
         tarea=0
         tyda=0
@@ -846,7 +846,7 @@ class MemberResponse(GlobalResponse):
     
     def MemberBMD(self, MemberNumber):
         
-        FEDivision = 1000
+        FEDivision = 20
         self.MemberNo = int(MemberNumber)
         #MOMENT AND SHEAR FORCE
         if(self.Members[self.MemberNo-1].alpha()>=0):
@@ -858,7 +858,7 @@ class MemberResponse(GlobalResponse):
 
         amp=0
         abcd1=[]
-        for l in range(1001):
+        for l in range(FEDivision):
             abcd1.append(0)
         abcd2=[]
         abcd3=[]
@@ -870,11 +870,12 @@ class MemberResponse(GlobalResponse):
                     abcd1=[abcd1[m]+self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(FEDivision)]
                 else:
                     abcd1=[abcd1[m]-self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(FEDivision)]
-        while(amp<self.Members[self.MemberNo-1].length()):
-            mapi=(amp/self.Members[self.MemberNo-1].length()*(-fem2-fem1))+fem1
+        #old code with while loop have been modified
+        amp_values = np.linspace(0, self.Members[self.MemberNo-1].length(), FEDivision)
+        for amp in amp_values:
+            mapi = (amp / self.Members[self.MemberNo-1].length() * (-fem2 - fem1)) + fem1
             abcd2.append(mapi)
             self.amplist.append(amp)
-            amp=amp+self.Members[self.MemberNo-1].length()/(FEDivision - 1) 
         abcd3=[abcd1[n]+abcd2[n] for n in range(0,FEDivision)]
         for i in range(0,(FEDivision-1)):
             ax=(abcd3[i+1]-abcd3[i])/(self.amplist[i+1]-self.amplist[i])
@@ -974,7 +975,7 @@ class SecondOrderGlobalResponse(Model):
                         if(self.Members[mn].DoFNumber()[mr]==Mr):
                             for mc in range(0,6):
                                 if(self.Members[mn].DoFNumber()[mc]==Mc):
-                                    x=self.Members[mn].Second_Order_Global_Stiffness_Matrix(NormalForceList[mn])[mc][mr]
+                                    x=self.Members[mn].Second_Order_Global_Stiffness_Matrix_1(NormalForceList[mn])[mc][mr]
                                     y=y+x
                 R1.append(y)
             C1.append(R1)
@@ -1007,8 +1008,8 @@ class SecondOrderGlobalResponse(Model):
         NorForList =[]
         for i in range(NoMem):
             MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Global_Stiffness_Matrix_2", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(MemberForceLocal[0])
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(-MemberForceLocal[0])
 
         #2nd iteration
         for j in range(0,iteration_steps):
@@ -1020,8 +1021,8 @@ class SecondOrderGlobalResponse(Model):
             NorForList=[]
             for i in range(NoMem):
                 SecondOrderMemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-                SecondOrderMemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("Second_Order_Global_Stiffness_Matrix", i+1, self.Members, SecondOrderMemberDisplacement, self.Loads, NorForList1[i])
-                NorForList.append(SecondOrderMemberForceLocal[0])
+                SecondOrderMemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("Second_Order_Local_Stiffness_Matrix_1", i+1, self.Members, SecondOrderMemberDisplacement, self.Loads, NorForList1[i])
+                NorForList.append(-SecondOrderMemberForceLocal[0])
         
         self.NormalForceList = NorForList
         
@@ -1058,8 +1059,147 @@ class SecondOrderGlobalResponse(Model):
         BGSMConden = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
         BGSMM_1st_Ord_condensed = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         CriticalLoad , mode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
+        CriticalLoad = sorted(CriticalLoad, key=lambda x: abs(x))
+        CriticalLoad = [round(float(x.real), 2) for x in CriticalLoad]
 
         return min(filter(math.isfinite, [abs(z.real) for z in CriticalLoad])), CriticalLoad
+
+
+class SecondOrderMemberResponse(SecondOrderGlobalResponse):
+    
+    """
+    init is fomred to have MemberNumber called single time all thorought the class, but class 
+    is childrean of another, which variable to call will become a issue, hence not activated now
+    
+    def __init__(self, MemberNumber):
+        
+        self.MemberNo = int(MemberNumber)
+        if self.MemberNo == "" or float(self.MemberNo) > self.NoMembers:
+            self.MemberNo = 1
+        else:
+            self.MemberNo = int(self.MemberNo)
+    """
+    
+    def MemberDisplacement(self, MemberNumber):
+        MemberNo = int(MemberNumber)
+        self.SecondOrderDisplacementVector(5)
+        MemberDisplacement = [self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[0])],
+                             self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[1])],
+                             self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[2])],
+                             self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[3])],
+                             self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[4])],
+                             self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[5])]]
+        return MemberDisplacement
+       
+    def MemberForceLocal(self, MemberNumber):
+        MemberNo = int(MemberNumber)
+        #self.ForceVector()
+        self.SecondOrderDisplacementVector(5)
+
+        MemberForce = np.dot(np.dot(self.Members[MemberNo-1].Second_Order_Local_Stiffness_Matrix_1(self.NormalForceList[MemberNo-1]),self.Members[MemberNo-1].Transformation_Matrix()),self.MemberDisplacement(MemberNumber))
+
+        FixedendForce = [0, 0, 0, 0, 0, 0]
+        for a in range(len(self.Loads)):
+            if(int(self.Loads[a].AssignedTo[-1]) == MemberNo):
+                FixedendForcei = list(self.Loads[a].EquivalentLoad().values())[:-1]
+                FixedendForcei= [x[0] for x in FixedendForcei]
+                FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
+        MemberForce = np.round(MemberForce - FixedendForce,2)
+
+        return MemberForce
+    
+    def MemberForceGlobal(self,MemberNumber):
+        
+        MemberNo = int(MemberNumber)
+        MemberForce = self.MemberForceLocal(MemberNo)
+        MemberForceGlobal = np.dot(np.transpose(self.Members[MemberNo-1].Transformation_Matrix()),MemberForce)
+
+        return MemberForceGlobal
+        
+    def MemberBMD(self, MemberNumber):
+        
+        FEDivision = 20
+        MemberNo = int(MemberNumber)
+        #MOMENT AND SHEAR FORCE
+        if(self.Members[MemberNo-1].alpha()>=0):
+            fem1=self.MemberForceLocal(MemberNo)[2] #Fixed End Moment
+            fem2=self.MemberForceLocal(MemberNo)[5]
+        else:
+            fem1=self.MemberForceLocal(MemberNo)[5]
+            fem2=self.MemberForceLocal(MemberNo)[2]
+
+        amp=0
+        abcd1=[]
+        for l in range(FEDivision):
+            abcd1.append(0)
+        abcd2=[]
+        abcd3=[]
+        abcd4=[]
+        self.amplist=[]
+        for a in range(len(self.Loads)):
+            if(int(self.Loads[a].AssignedTo[-1]) == MemberNo):
+                if(self.Members[MemberNo-1].alpha()>=0):
+                    abcd1=[abcd1[m]+self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(FEDivision)]
+                else:
+                    abcd1=[abcd1[m]-self.Loads[a].EquivalentLoad()['FreeMoment'][m] for m in range(FEDivision)]
+        #old code with while loop have been modified
+        amp_values = np.linspace(0, self.Members[MemberNo-1].length(), FEDivision)
+        for amp in amp_values:
+            mapi = (amp / self.Members[MemberNo-1].length() * (-fem2 - fem1)) + fem1
+            abcd2.append(mapi)
+            self.amplist.append(amp)
+        abcd3=[abcd1[n]+abcd2[n] for n in range(0,FEDivision)]
+        for i in range(0,(FEDivision-1)):
+            ax=(abcd3[i+1]-abcd3[i])/(self.amplist[i+1]-self.amplist[i])
+            abcd4.append(ax)
+        self.MemberMoment = abcd3
+        self.MemberShear = abcd4
+
+        return self.MemberMoment
+    
+    def MemberSFD(self, MemberNumber):
+        
+        return self.MemberShear
+    
+    def MemberAmplitude(self, MemberNumber):
+        
+        return self.amplist
+    
+    def MemberNFD(self, MemberNumber):
+        return None
+    
+    def PlotMemberBMD(self, MemberNumber):
+        
+        MemberNo = int(MemberNumber)
+        x_max=int(self.Members[MemberNo-1].length())
+        y_m_max = int(max(self.MemberBMD(MemberNo)) * 2)
+        y_m_min = int(min(self.MemberBMD(MemberNo)) * 2)
+        
+        if y_m_max == 0:
+            y_m_max = 5
+        if y_m_min == 0:
+            y_m_min = -5
+        if y_m_max == y_m_min:
+            y_m_max = abs(y_m_max)
+            y_m_min = -abs(y_m_min)
+        
+        c = self.MemberAmplitude(MemberNo)
+        d = self.MemberBMD(MemberNo)
+        g = [0, self.Members[MemberNo-1].length()]
+        h = [0, 0]
+        
+        plt.figure(figsize=(8, 5))
+        plt.plot(c, d, label="Bending Moment", color='red', linewidth=1.5)
+        plt.plot(g, h, label="Baseline", color='black', linewidth=1.5, linestyle='dashed')
+        
+        plt.xlabel('Distance (Meter)')
+        plt.ylabel('Bending Moment (kNm)')
+        plt.xticks(range(0, x_max + 1, max(1, round(self.Members[MemberNo-1].length() / 10))))
+        plt.yticks(range(y_m_min, y_m_max + 1, max(1, round((abs(y_m_max) + abs(y_m_min)) / 10))))
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend()
+        plt.title(f'Moment Diagram for Member {MemberNo}')
+        plt.show()
 
 
 class Senstivity(GlobalResponse):
