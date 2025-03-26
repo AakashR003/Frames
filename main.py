@@ -14,6 +14,9 @@ import math
 #import FiniteElementDivisor
 
 
+FEDivision = 1000 # Finite element Division
+
+
 class Node():
     
     i=1
@@ -230,7 +233,7 @@ class NeumanBC():
     
     def EquivalentLoad(self):
         
-        FEDivision = 20 # Finite element Division
+        global FEDivision # Finite element Division
         self.frml=[] # Free moment Distribution(Simply supported) along beam 
         tarea=0
         tyda=0
@@ -368,6 +371,9 @@ class Computer():
     def DisplacementVector():
         return None
     
+    def SupportForceVector():
+        return None
+
     def ModelDisplacementList_To_Dict(Displacement,UnConstrainedDoF,TotalDoF):
 
         DisplacementDict={}
@@ -377,9 +383,6 @@ class Computer():
             else:
                 DisplacementDict[str(TotalDoF()[i])]=0
         return DisplacementDict
-
-    def SupportForceVector():
-        return None
 
     def ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,Members):
         MemberNo = int(MemberNumber)
@@ -410,6 +413,62 @@ class Computer():
         MemberForce = np.round(MemberForce - FixedendForce,2)
 
         return MemberForce
+
+    def ForceLocal_To_ForceGlobal(StiffnessMatrixType, MemberNumber, Members, MemberDisplacement, Loads, NormalForce = None):
+        return None
+    
+    def PlotStructuralElements(self, ax, Members, Points, sensitivities=None):
+        """
+        Helper function to plot structural elements (members, nodes, supports)
+        ax: matplotlib axes object to plot on
+        sensitivities: optional list of sensitivity values for color coding
+        """
+        # Plot members
+        for i, member in enumerate(Members):
+            start_node = member.Start_Node
+            end_node = member.End_Node
+            if sensitivities is not None:
+                # Normalize sensitivities
+                min_sensitivity = min(sensitivities)
+                max_sensitivity = max(sensitivities)
+                if max_sensitivity == min_sensitivity:
+                    normalized_sensitivity = 0.5
+                else:
+                    normalized_sensitivity = (sensitivities[i] - min_sensitivity) / (max_sensitivity - min_sensitivity)
+                color = plt.cm.OrRd(normalized_sensitivity)
+                ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
+                        [start_node.ycoordinate, end_node.ycoordinate], 
+                        color=color, linewidth=2)
+            else:
+                ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
+                       [start_node.ycoordinate, end_node.ycoordinate], 'b-')
+
+        # Plot nodes and support conditions
+        for i, node in enumerate(Points):
+            # Plot nodes
+            ax.plot(node.xcoordinate, node.ycoordinate, 'ro')
+            
+            # Add node numbers
+            ax.text(node.xcoordinate, node.ycoordinate + 0.2, f"{i+1}", 
+                   fontsize=12, ha='center', va='bottom', color='black')
+
+            # Plot support conditions
+            if node.support_condition == 'Fixed Support':
+                ax.plot(node.xcoordinate, node.ycoordinate, 'ks', 
+                       markersize=10, label="Fixed Support" if i == 0 else "")
+            elif node.support_condition == 'Hinged Support':
+                ax.plot(node.xcoordinate, node.ycoordinate, 'g^', 
+                       markersize=10, label="Hinged Support" if i == 0 else "")
+            elif node.support_condition == 'Roller in X-plane':
+                ax.plot(node.xcoordinate, node.ycoordinate, 'bv', 
+                       markersize=10, label="Roller in X-plane" if i == 0 else "")
+            elif node.support_condition == 'Roller in Y-plane':
+                ax.plot(node.xcoordinate, node.ycoordinate, 'r>', 
+                       markersize=10, label="Roller in Y-plane" if i == 0 else "")
+            elif node.support_condition == 'Hinge Joint':
+                ax.plot(node.xcoordinate, node.ycoordinate, 'go', 
+                       markerfacecolor='none', markersize=10, 
+                       label="Hinged Support" if i == 0 else "")
 
 
 class Model():
@@ -814,31 +873,29 @@ class MemberResponse(GlobalResponse):
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[4])],
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[5])]]
         return MemberDisplacement
-    
-    
-    def MemberForceLocal(self, MemberNumber):
+        
+    def MemberForceLocal(self, MemberNumber, All = False):
+
+        """ this function computes the local force in the member using the displacement vector.
+        It uses the computer class to convert the model displacement to member displacement and 
+        then computes the local force using the member displacement and member stiffness matrix.
+        If All is True, it computes the local force for all members and returns a list of local forces"""
+
         self.MemberNo = int(MemberNumber)
         Displacement = self.DisplacementVector()
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(Displacement,self.UnConstrainedDoF,self.TotalDoF)
         MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,self.Members)
+        MemberForce = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", MemberNumber, self.Members, MemberDisplacement, self.Loads )
 
-        """
-        MemberFixedEndForce = [self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[0]],
-                             self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[1]],
-                             self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[2]],
-                             self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[3]],
-                             self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[4]],
-                             self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[5]]]
-        """
+        if All == True:
 
-        MemberForce = np.dot(np.dot(self.Members[self.MemberNo-1].First_Order_Local_Stiffness_Matrix_1(),self.Members[self.MemberNo-1].Transformation_Matrix()),MemberDisplacement)
-        FixedendForce = [0, 0, 0, 0, 0, 0]
-        for a in range(len(self.Loads)):
-            if(int(self.Loads[a].AssignedTo.split()[1]) == self.MemberNo):
-                FixedendForcei = list(self.Loads[a].EquivalentLoad().values())[:-1]
-                FixedendForcei= [x[0] for x in FixedendForcei]
-                FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
-        MemberForce = np.round(MemberForce - FixedendForce,2)
+            MemberForceLocalAll = []
+            for i in range(self.NoMembers):
+                MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+                MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+                MemberForceLocalAll.append(MemberForceLocal)
+
+            return MemberForceLocalAll
 
         return MemberForce
     
@@ -848,16 +905,24 @@ class MemberResponse(GlobalResponse):
         MemberForceGlobal = np.dot(np.transpose(self.Members[self.MemberNo-1].Transformation_Matrix()),MemberForce)
 
         return MemberForceGlobal
-    
-    
-    def MemberBMD(self, MemberNumber):
-        
-        FEDivision = 20
+
+    def MemberBMD(self, MemberNumber, MemberForceLocal=None):
+
+        """ This FUnction computes Bending moment diagram along the length of the beam by using MemberForceLocal.
+        If MemberForceLocal is not provided, it computes MemberForceLocal using MemberForceLocal function.
+        It divides the length of the beam into FEDivision parts and computes the BMD at each part. At each part, it computes
+        the Fixed end moment and SS beam moment from Neuman class output and combines them to get the total moment distribution"""
+
+        global FEDivision
         MemberNo = int(MemberNumber)
         member = self.Members[MemberNo - 1]
         alpha = member.alpha()
         length = member.length()
-        local_forces = self.MemberForceLocal(MemberNo)
+
+        if MemberForceLocal is None:
+            local_forces = self.MemberForceLocal(MemberNo)
+        else:
+            local_forces = MemberForceLocal
         
         # Determine fem1 and fem2 based on alpha
         fem1, fem2 = (local_forces[2], local_forces[5]) if alpha >= 0 else (local_forces[5], local_forces[2])
@@ -933,6 +998,69 @@ class MemberResponse(GlobalResponse):
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.legend()
         plt.title(f'Moment Diagram for Member {self.MemberNo}')
+        plt.show()
+
+    def PlotGlobalBMD(self, scale_factor=0.5, show_structure=True):
+
+        """
+        Plots bending moment diagrams with optional structure visualization
+        scale_factor: Controls the visual scaling of BMD magnitudes
+        show_structure: If True, shows the structural elements
+        """
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("Bending Moment Diagrams")
+        
+        if show_structure:
+            computer_instance = Computer()
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+        
+        MemberForceLocalAll = self.MemberForceLocal(1, All=True)
+
+        # Determine global maximum absolute moment for scaling
+        max_abs_moment = max(max(abs(moment) for moment in member_forces) 
+                         for member_forces in MemberForceLocalAll)
+        
+        # Plot BMD for each member as simple lines
+        for member_idx, member in enumerate(self.Members):
+            # Get member properties
+            start = member.Start_Node
+            end = member.End_Node
+            L = member.length()
+            
+            # Get BMD values and positions
+            #positions = self.MemberAmplitude(member_idx+1)
+            moments = self.MemberBMD(member_idx+1, MemberForceLocal=MemberForceLocalAll[member_idx])
+            positions = self.amplist
+            
+            # Calculate member orientation
+            dx = end.xcoordinate - start.xcoordinate
+            dy = end.ycoordinate - start.ycoordinate
+            angle = np.arctan2(dy, dx)
+            
+            # Create perpendicular direction vector
+            perp_dir = np.array([-np.sin(angle), np.cos(angle)])
+            
+            # Normalize moments and apply scaling
+            scaled_moments = [m * scale_factor / max_abs_moment if max_abs_moment != 0 else 0 
+                             for m in moments]
+            
+            # Create points for BMD visualization
+            x_points = []
+            y_points = []
+            for pos, moment in zip(positions, scaled_moments):
+                # Calculate position along member
+                x_pos = start.xcoordinate + (dx * pos/L)
+                y_pos = start.ycoordinate + (dy * pos/L)
+                
+                # Offset by moment value in perpendicular direction
+                x_points.append(x_pos + perp_dir[0] * moment)
+                y_points.append(y_pos + perp_dir[1] * moment)
+            
+            # Plot BMD as simple black line
+            ax.plot(x_points, y_points, color='black', linewidth=1)
+
+        ax.axis('equal')
         plt.show()
 
 
@@ -1097,13 +1225,32 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
                              self.SecondOderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[5])]]
         return MemberDisplacement
        
-    def MemberForceLocal(self, MemberNumber):
+    def MemberForceLocal(self, MemberNumber, All = False):
+        
+        MemberNo = int(MemberNumber)
+        SecondOrderDisplacement = self.SecondOrderDisplacementVector(5)
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,self.Members)
+        MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("Second_Order_Local_Stiffness_Matrix_1", MemberNo, self.Members, MemberDisplacement, self.Loads, self.NormalForceList[MemberNo-1] )
+
+        if All == True:
+
+            MemberForceLocalAll = []
+            for i in range(self.NoMembers):
+                MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+                MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("Second_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads, self.NormalForceList[MemberNo-1] )
+                MemberForceLocalAll.append(MemberForceLocal)
+
+            return MemberForceLocalAll
+
+        """
         MemberNo = int(MemberNumber)
         SecondOrderDisplacement = self.SecondOrderDisplacementVector(5)
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
         MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,self.Members)
 
         MemberForce = np.dot(np.dot(self.Members[MemberNo-1].Second_Order_Local_Stiffness_Matrix_1(self.NormalForceList[MemberNo-1]),self.Members[MemberNo-1].Transformation_Matrix()),MemberDisplacement)
+
 
         FixedendForce = [0, 0, 0, 0, 0, 0]
         for a in range(len(self.Loads)):
@@ -1112,8 +1259,9 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
                 FixedendForcei= [x[0] for x in FixedendForcei]
                 FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
         MemberForce = np.round(MemberForce - FixedendForce,2)
+        #"""
 
-        return MemberForce
+        return MemberForceLocal
     
     def MemberForceGlobal(self,MemberNumber):
         
@@ -1123,15 +1271,19 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
 
         return MemberForceGlobal
         
-    def MemberBMD(self, MemberNumber):
-        FEDivision = 20
+    def MemberBMD(self, MemberNumber, MemberForceLocal=None):
+        global FEDivision
         MemberNo = int(MemberNumber)
         member = self.Members[MemberNo-1]
         length = member.length()
         alpha = member.alpha()
+
+        if MemberForceLocal is None:
+            local_forces = self.MemberForceLocal(MemberNo)
+        else:
+            local_forces = MemberForceLocal
         
         # Get local forces once and reuse
-        local_forces = self.MemberForceLocal(MemberNo)
         fem1, fem2 = (local_forces[2], local_forces[5]) if alpha >= 0 else (local_forces[5], local_forces[2])
 
         
@@ -1206,6 +1358,68 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
         plt.title(f'Moment Diagram for Member {MemberNo}')
         plt.show()
 
+    def PlotGlobalBMD(self, scale_factor=0.5, show_structure=True):
+
+        """
+        Plots bending moment diagrams with optional structure visualization
+        scale_factor: Controls the visual scaling of BMD magnitudes
+        show_structure: If True, shows the structural elements
+        """
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("Bending Moment Diagrams")
+        
+        if show_structure:
+            computer_instance = Computer()
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+        
+        MemberForceLocalAll = self.MemberForceLocal(1, All=True)
+        
+        # Determine global maximum absolute moment for scaling
+        max_abs_moment = max(max(abs(moment) for moment in member_forces) 
+                         for member_forces in MemberForceLocalAll)
+        
+        # Plot BMD for each member as simple lines
+        for member_idx, member in enumerate(self.Members):
+            # Get member properties
+            start = member.Start_Node
+            end = member.End_Node
+            L = member.length()
+            
+            # Get BMD values and positions
+            #positions = self.MemberAmplitude(member_idx+1)
+            moments = self.MemberBMD(member_idx+1, MemberForceLocal=MemberForceLocalAll[member_idx])
+            positions = self.amplist
+            
+            # Calculate member orientation
+            dx = end.xcoordinate - start.xcoordinate
+            dy = end.ycoordinate - start.ycoordinate
+            angle = np.arctan2(dy, dx)
+            
+            # Create perpendicular direction vector
+            perp_dir = np.array([-np.sin(angle), np.cos(angle)])
+            
+            # Normalize moments and apply scaling
+            scaled_moments = [m * scale_factor / max_abs_moment if max_abs_moment != 0 else 0 
+                             for m in moments]
+            
+            # Create points for BMD visualization
+            x_points = []
+            y_points = []
+            for pos, moment in zip(positions, scaled_moments):
+                # Calculate position along member
+                x_pos = start.xcoordinate + (dx * pos/L)
+                y_pos = start.ycoordinate + (dy * pos/L)
+                
+                # Offset by moment value in perpendicular direction
+                x_points.append(x_pos + perp_dir[0] * moment)
+                y_points.append(y_pos + perp_dir[1] * moment)
+            
+            # Plot BMD as simple black line
+            ax.plot(x_points, y_points, color='black', linewidth=1)
+
+        ax.axis('equal')
+        plt.show()
 
 class Senstivity(GlobalResponse):
 
