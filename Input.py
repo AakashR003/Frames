@@ -21,7 +21,7 @@ NeumanBC(type="PL", Magnitude=10000, Distance1=2.5, AssignedTo="Member 2", Membe
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 1)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 20)
 
 
 #main Model part - Main mode part includes sub model part
@@ -34,11 +34,13 @@ SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members 
 
 
 Model1.PlotGlobalModel()
-print("mem1",MemberRes1.MemberForceGlobal(1))
-print("mem2",MemberRes1.MemberForceGlobal(2))
-print("mem1",MemberRes1.MemberForceLocal(1))
-print("mem2",MemberRes1.MemberForceLocal(2))
-print(SecondOrderResponse1.BucklingEigenLoad())
+#print("mem1",MemberRes1.MemberForceGlobal(1))
+#print("mem2",MemberRes1.MemberForceGlobal(2))
+#print("mem1",MemberRes1.MemberForceLocal(1))
+#print("mem2",MemberRes1.MemberForceLocal(2))
+#print(SecondOrderResponse1.BucklingEigenLoad())
+
 MemberRes1.PlotMemberBMD(1)
+#print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
 SecondOrderMemberResponse1.PlotMemberBMD(1)
 #MemberRes1.PlotMemberBMD(1)
