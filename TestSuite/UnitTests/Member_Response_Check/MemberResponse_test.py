@@ -1,3 +1,4 @@
+import main
 import pytest
 import numpy as np
 from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
@@ -6,7 +7,7 @@ from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
 
 def test_MemberForce():
 
-
+    main.FEDivision = 1000
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
         Node(Node_Number=2, xcoordinate=10, ycoordinate=0, Support_Condition="Rigid Joint"),

@@ -30,3 +30,16 @@ def print_class_Objects(objects, list_name=None):
         # Print with proper indentation
         print(f"    {type(obj).__name__}({', '.join(attr_strs)}),")
     print("]")
+
+
+
+
+"""
+MemberFixedEndForce = [self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[0]],
+                        self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[1]],
+                        self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[2]],
+                        self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[3]],
+                        self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[4]],
+                        self.ForceVectorDict[self.Members[self.MemberNo-1].DoFNumber()[5]]]
+Use this if needed later
+"""
