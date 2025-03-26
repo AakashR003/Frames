@@ -1,5 +1,4 @@
-
-
+import main
 import pytest
 import numpy as np
 from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, SecondOrderGlobalResponse
@@ -8,7 +7,7 @@ from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, 
 def setup_model1():
 
     # Cantilivered L-frame with Point load which can be also teated as cantilivered beam Eigen value problem
-
+    main.FEDivision = 1000
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
@@ -41,6 +40,7 @@ def test_FirstEigenLoad_1(setup_model1):
 @pytest.fixture
 def setup_model2():
     #Model Parts - Basic essential for building a model
+    main.FEDivision = 1000
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=0, ycoordinate=1, Support_Condition="Rigid Joint"),

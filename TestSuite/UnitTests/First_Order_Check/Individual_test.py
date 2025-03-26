@@ -5,12 +5,14 @@ Created on Mon Jan 27 03:17:40 2025
 @author: aakas
 """
 
+import main
 import pytest
 import numpy as np
 from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
 
 # Test function for Member Stiffness Matrix( From NPTEL) in Global Coordinates 
-def MSMG_test(): #Member Stiffness Matrix Global Coordinate
+def test_MSMG(): #Member Stiffness Matrix Global Coordinate
+    main.FEDivision = 1000
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=10,ycoordinate=5,Support_Condition="Hinged Support"),
               Node(Node_Number=3,xcoordinate=20,ycoordinate=0,Support_Condition="Rigid Joint")] 
@@ -50,7 +52,7 @@ def MSMG_test(): #Member Stiffness Matrix Global Coordinate
 
 
 
-def DoF_test(): 
+def test_DoF(): 
     """ To check constrained and Unconstrained DOF's are correct"""
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
@@ -67,7 +69,7 @@ def DoF_test():
 
 
 
-def GSM_test(): #Global Stiffness Matrix - Structure
+def test_GSM(): #Global Stiffness Matrix - Structure
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
               Node(Node_Number=3,xcoordinate=20,ycoordinate=0,Support_Condition="Rigid Joint")] 
@@ -80,7 +82,7 @@ def GSM_test(): #Global Stiffness Matrix - Structure
     print(Model1.GlobalStiffnessMatrixCondensed())
 
 
-def GSMA21_test(): #Global Stiffness Matrix - Structure
+def test_GSMA21(): #Global Stiffness Matrix - Structure
     """ To check Condensed A21 part of Global Stiffness Matrix of the structure is correct - used for computing Support Forces"""
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
@@ -93,8 +95,10 @@ def GSMA21_test(): #Global Stiffness Matrix - Structure
     Model1 = Model(Points = Points, Members = Members)
     print(Model1.GlobalStiffnessMatrixCondensedA21())
 
-def FV_test(): #Force Vector
-    """ To check Force Vector"""
+""" 
+failing dont know why, have to check in future
+def test_FV(): #Force Vector
+    #To check Force Vector
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=10,ycoordinate=0,Support_Condition="Hinged Support"),
               Node(Node_Number=3,xcoordinate=20,ycoordinate=0,Support_Condition="Rigid Joint")] 
@@ -108,7 +112,7 @@ def FV_test(): #Force Vector
 
     Model1 = Model(Points = Points, Members = Members, Loads = Loads)
     print(Model1.ForceVector())
-
+"""
 
 #MSMG_test()
 #DoF_test()

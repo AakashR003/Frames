@@ -936,7 +936,6 @@ class MemberResponse(GlobalResponse):
                 free_moment = np.array(load.EquivalentLoad()['FreeMoment'][:FEDivision])
                 abcd1 += free_moment if alpha >= 0 else -free_moment
         
-        print(len(abcd1))
         # Vectorized calculation of abcd2 (linear moment component)
         amp_values = np.linspace(0, length, FEDivision)
         abcd2 = (amp_values / length) * (-fem2 - fem1) + fem1

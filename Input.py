@@ -8,7 +8,7 @@ from Functions import print_class_Objects
 main.FEDivision = 20
 #Model Parts - Basic essential for building a model
 Points = [
-Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
+Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
 Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
 Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Hinged Support")
 ]
@@ -28,7 +28,7 @@ NeumanBC(type="PL", Magnitude=100000, Distance1=2.5, AssignedTo="Member 2", Memb
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 2)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 1)
 
 
 #main Model part - Main mode part includes sub model part
@@ -46,11 +46,14 @@ Model1.PlotGlobalModel()
 #print("mem2",MemberRes1.MemberForceGlobal(2))
 #print("mem1",MemberRes1.MemberForceLocal(1))
 #print("mem2",MemberRes1.MemberForceLocal(2))
-print(SecondOrderResponse1.BucklingEigenLoad())
+#print(SecondOrderResponse1.BucklingEigenLoad())
 
-MemberRes1.PlotMemberBMD(1)
+print(MemberRes1.MemberForceLocal(1, All = True))
+print(SecondOrderMemberResponse1.MemberForceLocal(1, All = True))
+
+#MemberRes1.PlotMemberBMD(1)
 #MemberRes1.PlotGlobalBMD(show_structure=True)
 #print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
-#Comparision1.PlotGlobalBMDComparison()
+Comparision1.PlotGlobalBMDComparison()

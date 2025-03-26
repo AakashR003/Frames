@@ -5,12 +5,14 @@ Created on Mon Jan 27 04:23:42 2025
 @author: aakas
 """
 
+import main
 import pytest
 import numpy as np
 from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
 
 @pytest.fixture
 def setup_model():
+    main.FEDivision = 1000
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=10, ycoordinate=0, Support_Condition="Rigid Joint"),
