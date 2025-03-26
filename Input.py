@@ -1,12 +1,11 @@
 import main
-
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, NodalResponse, SecondOrderGlobalResponse, SecondOrderMemberResponse
+from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, NodalResponse, SecondOrderGlobalResponse, SecondOrderMemberResponse, Comparision
 from FiniteElementDivisor import divide_into_finite_elements
 from Functions import print_class_Objects
 
 
 
-
+main.FEDivision = 20
 #Model Parts - Basic essential for building a model
 Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
@@ -22,7 +21,7 @@ Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Young
 
 
 Loads = [
-NeumanBC(type="PL", Magnitude=10000, Distance1=2.5, AssignedTo="Member 2", Members = Members)
+NeumanBC(type="PL", Magnitude=100000, Distance1=2.5, AssignedTo="Member 2", Members = Members)
 ] 
 
 
@@ -39,6 +38,7 @@ NodalRes1 = NodalResponse(Points = Points, Members = Members, Loads = Loads)
 MemberRes1 = MemberResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderResponse1 = SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
+Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberResponse1)
 
 
 Model1.PlotGlobalModel()
@@ -46,11 +46,11 @@ Model1.PlotGlobalModel()
 #print("mem2",MemberRes1.MemberForceGlobal(2))
 #print("mem1",MemberRes1.MemberForceLocal(1))
 #print("mem2",MemberRes1.MemberForceLocal(2))
-#print(SecondOrderResponse1.BucklingEigenLoad())
+print(SecondOrderResponse1.BucklingEigenLoad())
 
 MemberRes1.PlotMemberBMD(1)
-MemberRes1.PlotGlobalBMD(show_structure=True)
+#MemberRes1.PlotGlobalBMD(show_structure=True)
 #print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
-SecondOrderMemberResponse1.PlotMemberBMD(1)
-SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
-#MemberRes1.PlotMemberBMD(1)
+#SecondOrderMemberResponse1.PlotMemberBMD(1)
+#SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
+#Comparision1.PlotGlobalBMDComparison()
