@@ -5,11 +5,17 @@ Created on Wed Dec  4 03:54:23 2024
 @author: aakas
 """
 
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig
-import importlib
+#import importlib
 import math
+import scipy.sparse as sp
+from scipy.sparse.linalg import eigsh, cg
+from sksparse.cholmod import cholesky
+#import time
+
 
 #import FiniteElementDivisor
 
@@ -323,54 +329,71 @@ dont use error is there - because while computing
 
 class Computer():
     """
-    This class shall be used in future for combining common computers on different class into gloabl computer
+    This class is used for combining common computers on different class into gloabl computer
     """
 
-    def GlobalStiffnessMatrix(TotalDoF,NoMembers,Members,StiffnessMatrixType):
-
-        C1=[]
-        for Mc in TotalDoF():
-            R1=[]
-            for Mr in TotalDoF():
-                y=0
-                for mn in range(0,NoMembers):
-                    for mr in range(0,6):
-                        if(Members[mn].DoFNumber()[mr]==Mr):
-                            for mc in range(0,6):
-                                if(Members[mn].DoFNumber()[mc]==Mc):
-                                    x = getattr(Members[mn],StiffnessMatrixType)[mc][mr]
-                                    y=y+x
-                R1.append(y)
-            C1.append(R1)
-        return None
-    
-    def GLobalStifnessMatrixCondensedA11(UnConstrainedDoF,Members,StiffnessMatrixType, NormalForce = None): #Stiffness matrix type - name of definition of Stiffness matrix in Member class
+    def StiffnessMatrixAssembler(UnConstrainedDoF,Members,StiffnessMatrixType, NormalForce = None):
+        
+        unconstrained_dofs = UnConstrainedDoF
+        num_dofs = len(unconstrained_dofs)
         NoMembers = len(Members)
-        C1=[]
-        for Mc in UnConstrainedDoF:
-            R1=[]
-            for Mr in UnConstrainedDoF:
-                y=0
-                for mn in range(0,NoMembers):
-                    for mr in range(0,6):
-                        if(Members[mn].DoFNumber()[mr]==Mr):
-                            for mc in range(0,6):
-                                if(Members[mn].DoFNumber()[mc]==Mc):
-                                    if(NormalForce == None):
-                                        x = getattr(Members[mn],StiffnessMatrixType)()[mc][mr]
-                                    else:
-                                        x = getattr(Members[mn],StiffnessMatrixType)(NormalForce[mn])[mc][mr]
-                                    y=y+x
-                R1.append(y)
-            C1.append(R1)
+        
+        # Create a DoF mapping for quick lookup
+        dof_index = {dof: i for i, dof in enumerate(unconstrained_dofs)}
+        
+        # Initialize stiffness matrix as a NumPy array
+        C1 = np.zeros((num_dofs, num_dofs))
+        
+        # Precompute Second Order Global Stiffness Matrices for all members
+        if(NormalForce == None):        
+            member_matrices = [
+            np.array(getattr(Members[mn],StiffnessMatrixType)())
+            for mn in range(NoMembers)
+            ]
+        else:
+            member_matrices = [
+            np.array(getattr(Members[mn],StiffnessMatrixType)(NormalForce[mn]))
+            for mn in range(NoMembers)
+            ]
+
+        # Loop efficiently over members and DoFs
+        for mn in range(NoMembers):
+            member = Members[mn]
+            dof_numbers = member.DoFNumber()
+            K_local = member_matrices[mn]
+
+            for mc in range(6):
+                if dof_numbers[mc] in dof_index:
+                    row = dof_index[dof_numbers[mc]]
+                    for mr in range(6):
+                        if dof_numbers[mr] in dof_index:
+                            col = dof_index[dof_numbers[mr]]
+                            C1[row, col] += K_local[mc, mr]
+
         return C1
-    
+   
     def GlobalStifnessMatrixA21():
         return None
     
-    def DisplacementVector():
-        return None
+    def DirectInverseDisplacementSolver(StiffnessMatrix, ForceVector):
+        
+        Displacement = np.dot((np.linalg.inv(np.array(StiffnessMatrix))),ForceVector)
+
+        return Displacement
     
+    def CholeskyDisplacementSolver(StiffnessMatrix, ForceVector):
+
+        K = sp.csc_matrix(StiffnessMatrix)
+        # Perform Cholesky factorization
+        factor = cholesky(K)
+        # Solving for displacement without computing the inverse explicitly
+        Displacement = factor.solve_A(ForceVector)
+
+        return Displacement
+    
+    def ConjugateGradientDisplacementSolver():
+        return None
+
     def SupportForceVector():
         return None
 
@@ -469,6 +492,45 @@ class Computer():
                 ax.plot(node.xcoordinate, node.ycoordinate, 'go', 
                        markerfacecolor='none', markersize=10, 
                        label="Hinged Support" if i == 0 else "")
+      
+    def GLobalStifnessMatrixCondensedA11_old(UnConstrainedDoF,Members,StiffnessMatrixType, NormalForce = None): #Stiffness matrix type - name of definition of Stiffness matrix in Member class
+        NoMembers = len(Members)
+        C1=[]
+        for Mc in UnConstrainedDoF:
+            R1=[]
+            for Mr in UnConstrainedDoF:
+                y=0
+                for mn in range(0,NoMembers):
+                    for mr in range(0,6):
+                        if(Members[mn].DoFNumber()[mr]==Mr):
+                            for mc in range(0,6):
+                                if(Members[mn].DoFNumber()[mc]==Mc):
+                                    if(NormalForce == None):
+                                        x = getattr(Members[mn],StiffnessMatrixType)()[mc][mr]
+                                    else:
+                                        x = getattr(Members[mn],StiffnessMatrixType)(NormalForce[mn])[mc][mr]
+                                    y=y+x
+                R1.append(y)
+            C1.append(R1)
+        return C1
+
+    def GlobalStiffnessMatrixold(TotalDoF,NoMembers,Members,StiffnessMatrixType):
+
+        C1=[]
+        for Mc in TotalDoF():
+            R1=[]
+            for Mr in TotalDoF():
+                y=0
+                for mn in range(0,NoMembers):
+                    for mr in range(0,6):
+                        if(Members[mn].DoFNumber()[mr]==Mr):
+                            for mc in range(0,6):
+                                if(Members[mn].DoFNumber()[mc]==Mc):
+                                    x = getattr(Members[mn],StiffnessMatrixType)[mc][mr]
+                                    y=y+x
+                R1.append(y)
+            C1.append(R1)
+        return None
 
 
 class Model():
@@ -571,37 +633,13 @@ class Model():
         return {num: 0 for num in self.TotalDoF()}
     
     def GlobalStiffnessMatrix(self):
-        C1=[]
-        for Mc in self.TotalDoF():
-            R1=[]
-            for Mr in self.TotalDoF():
-                y=0
-                for mn in range(0,self.NoMembers):
-                    for mr in range(0,6):
-                        if(self.Members[mn].DoFNumber()[mr]==Mr):
-                            for mc in range(0,6):
-                                if(self.Members[mn].DoFNumber()[mc]==Mc):
-                                    x=self.Members[mn].First_Order_Global_Stiffness_Matrix_1()[mc][mr]
-                                    y=y+x
-                R1.append(y)
-            C1.append(R1)
+       
+        C1 = Computer.StiffnessMatrixAssembler(self.TotalDoF(), self.Members, "First_Order_Global_Stiffness_Matrix_1")
         return C1
     
     def GlobalStiffnessMatrixCondensed(self):
-        C1=[]
-        for Mc in self.UnConstrainedDoF():
-            R1=[]
-            for Mr in self.UnConstrainedDoF():
-                y=0
-                for mn in range(0,self.NoMembers):
-                    for mr in range(0,6):
-                        if(self.Members[mn].DoFNumber()[mr]==Mr):
-                            for mc in range(0,6):
-                                if(self.Members[mn].DoFNumber()[mc]==Mc):
-                                    x=self.Members[mn].First_Order_Global_Stiffness_Matrix_1()[mc][mr]
-                                    y=y+x
-                R1.append(y)
-            C1.append(R1)
+        
+        C1 = Computer.StiffnessMatrixAssembler(self.UnConstrainedDoF(), self.Members, "First_Order_Global_Stiffness_Matrix_1")
         return C1
     
     def GlobalStiffnessMatrixCondensedA21(self):
@@ -783,8 +821,7 @@ class Model():
 class GlobalResponse(Model):
     
     def DisplacementVector(self):
-        self.Displacement=np.dot((np.linalg.inv(np.array(self.GlobalStiffnessMatrixCondensed()))),self.ForceVector())
-        
+        self.Displacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
         #DisplacementDict formation
         self.DisplacementDict={}
         for i in range(len(self.TotalDoF())):
@@ -1070,7 +1107,7 @@ class SecondOrderGlobalResponse(Model):
 
         NoMem = len(self.Members)
 
-        FirstOderDisplacement = np.dot((np.linalg.inv(np.array(self.GlobalStiffnessMatrixCondensed()))),self.ForceVector())
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
         NorForList =[]
         for i in range(NoMem):
@@ -1081,39 +1118,15 @@ class SecondOrderGlobalResponse(Model):
         return NorForList
     
     def SecondOrderGlobalStiffnessMatrix(self, NormalForceList):
-        C1=[]
-        for Mc in self.TotalDoF():
-            R1=[]
-            for Mr in self.TotalDoF():
-                y=0
-                for mn in range(0,self.NoMembers):
-                    for mr in range(0,6):
-                        if(self.Members[mn].DoFNumber()[mr]==Mr):
-                            for mc in range(0,6):
-                                if(self.Members[mn].DoFNumber()[mc]==Mc):
-                                    x=self.Members[mn].Second_Order_Global_Stiffness_Matrix_1(NormalForceList[mn])[mc][mr]
-                                    y=y+x
-                R1.append(y)
-            C1.append(R1)
+        
+        C1 = Computer.StiffnessMatrixAssembler(self.TotalDoF(), self.Members, "Second_Order_Global_Stiffness_Matrix_1", NormalForceList)
         return C1
     
     def SecondOrderGlobalStiffnessMatrixCondensed(self, NormalForceList):
-        C1=[]
-        for Mc in self.UnConstrainedDoF():
-            R1=[]
-            for Mr in self.UnConstrainedDoF():
-                y=0
-                for mn in range(0,self.NoMembers):
-                    for mr in range(0,6):
-                        if(self.Members[mn].DoFNumber()[mr]==Mr):
-                            for mc in range(0,6):
-                                if(self.Members[mn].DoFNumber()[mc]==Mc):
-                                    x=self.Members[mn].Second_Order_Global_Stiffness_Matrix_1(NormalForceList[mn])[mc][mr]
-                                    y=y+x
-                R1.append(y)
-            C1.append(R1)
+
+        C1 = Computer.StiffnessMatrixAssembler(self.UnConstrainedDoF(), self.Members, "Second_Order_Global_Stiffness_Matrix_1", NormalForceList)
         return C1
-    
+            
     def SecondOrderGlobalStiffnessMatrixCondensedA21(self, NormalForceList):
         C1=[]
         for Mc in self.ConstrainedDoF():
@@ -1136,7 +1149,7 @@ class SecondOrderGlobalResponse(Model):
         NoMem = len(self.Members)
 
         #1st iteration
-        FirstOderDisplacement = np.dot((np.linalg.inv(np.array(self.GlobalStiffnessMatrixCondensed()))),self.ForceVector())
+        FirstOderDisplacement = Computer.CholeskyDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
         NorForList =[]
         for i in range(NoMem):
@@ -1147,7 +1160,7 @@ class SecondOrderGlobalResponse(Model):
         #2nd iteration
         for j in range(0,iteration_steps):
 
-            SecondOrderDisplacement=np.dot((np.linalg.inv(np.array(self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)))),self.ForceVector())
+            SecondOrderDisplacement = Computer.CholeskyDisplacementSolver(self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList),self.ForceVector())
             DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
             
             NorForList1 = NorForList
@@ -1173,8 +1186,8 @@ class SecondOrderGlobalResponse(Model):
     
     def SecondOrderSupportForcesVector(self):
 
-        self.SecondOrderDisplacementVector(5)
-        SupportForces = np.dot(np.array(self.SecondOrderGlobalStiffnessMatrixCondensedA21(self.NormalForceList)),self.SecondOrderDisplacementVector())
+        #self.SecondOrderDisplacementVector(5)
+        SupportForces = np.dot(np.array(self.SecondOrderGlobalStiffnessMatrixCondensedA21(self.NormalForceList)),self.SecondOrderDisplacementVector(5))
         
         self.ForceVectorDict={}
         for i in range(len(self.TotalDoF())):
@@ -1190,9 +1203,10 @@ class SecondOrderGlobalResponse(Model):
         #preparing variables for computation
         gr_buck = self.UnConstrainedDoF()
         #print("NormalForce", self.NormalForce())
-        BGSMConden = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
-        BGSMM_1st_Ord_condensed = Computer.GLobalStifnessMatrixCondensedA11(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
+        BGSMConden = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
+        BGSMM_1st_Ord_condensed = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         CriticalLoad , mode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
+        #CriticalLoad , mode = eigsh(BGSMM_1st_Ord_condensed, k=6, M=BGSMConden, which='SM')
         CriticalLoad = sorted(CriticalLoad, key=lambda x: abs(x))
         CriticalLoad = [round(float(x.real), 2) for x in CriticalLoad]
 
@@ -1701,7 +1715,7 @@ Wrong
 """
 Improvements
 
-1. Include number of finit element forces as a variable
+1. Include number of finit element forces as a variable - done
 
 """
 
