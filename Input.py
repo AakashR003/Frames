@@ -5,12 +5,12 @@ from Functions import print_class_Objects
 
 
 
-main.FEDivision = 11
+main.FEDivision = 100
 #Model Parts - Basic essential for building a model
 Points = [
-Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
+Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
 Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
-Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Fixed Support")
+Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Hinged Support")
 ]
 
 
@@ -42,6 +42,8 @@ Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberRes
 
 
 Model1.PlotGlobalModel()
+
+#MemberRes1.PlotMemberBMD(2)
 #print(SecondOrderResponse1.BucklingEigenLoad())
 
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
@@ -56,4 +58,6 @@ Model1.PlotGlobalModel()
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
 #mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
 #print("MemNo",MemNo,SecondOrderMemberResponse1.MemberBMD(MemNo, mf[i]))
-Comparision1.PlotGlobalBMDComparison()
+#Comparision1.PlotGlobalBMDComparison()
+MemberRes1.PlotGlobalDeflection()
+SecondOrderResponse1.PlotEigenMode(2)
