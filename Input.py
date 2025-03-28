@@ -8,9 +8,9 @@ from Functions import print_class_Objects
 main.FEDivision = 11
 #Model Parts - Basic essential for building a model
 Points = [
-Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
+Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
 Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
-Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Hinged Support")
+Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Fixed Support")
 ]
 
 
@@ -42,20 +42,11 @@ Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberRes
 
 
 Model1.PlotGlobalModel()
-#print("mem1",MemberRes1.MemberForceGlobal(1))
-#print("mem2",MemberRes1.MemberForceGlobal(2))
-#print("mem1",MemberRes1.MemberForceLocal(1))
-#print("mem2",MemberRes1.MemberForceLocal(2))
 #print(SecondOrderResponse1.BucklingEigenLoad())
 
-SecondOrderMemberResponse1.PlotMemberBMD(1)
-mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
-for i in range(0,10):
-    MemNo = i+1
-    mere = SecondOrderMemberResponse1.MemberBMD(MemNo, mf[i])
-    print("MemNo", MemNo, mere)
+#SecondOrderMemberResponse1.PlotMemberBMD(1)
+#mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
 
-BendingMomentallT =[]
 
 
 #MemberRes1.PlotMemberBMD(1)
@@ -65,4 +56,4 @@ BendingMomentallT =[]
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
 #mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
 #print("MemNo",MemNo,SecondOrderMemberResponse1.MemberBMD(MemNo, mf[i]))
-#Comparision1.PlotGlobalBMDComparison()
+Comparision1.PlotGlobalBMDComparison()
