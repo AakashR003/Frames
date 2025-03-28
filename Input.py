@@ -8,9 +8,9 @@ from Functions import print_class_Objects
 main.FEDivision = 11
 #Model Parts - Basic essential for building a model
 Points = [
-Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
+Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
 Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
-Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Hinged Support")
+Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Fixed Support")
 ]
 
 
