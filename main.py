@@ -12,10 +12,13 @@ from scipy.linalg import eig
 #import importlib
 import math
 import scipy.sparse as sp
-from scipy.sparse.linalg import eigsh, cg
+from scipy.sparse.linalg import eigs, cg
 from sksparse.cholmod import cholesky
+from scipy.sparse import csc_matrix
+
 
 from Computer import Computer
+from Functions import max_nested
 #import time
 
 
@@ -697,13 +700,17 @@ class MemberResponse(GlobalResponse):
     
     def MemberDisplacement(self, MemberNumber):
         self.MemberNo = int(MemberNumber)
-        self.DisplacementVector()
+        Displacement = self.DisplacementVector()
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(Displacement, self.UnConstrainedDoF, self.TotalDoF)
+        MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber, DisplacementDict, self.Members)
+        """
         MemberDisplacement = [self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[0])],
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[1])],
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[2])],
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[3])],
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[4])],
                              self.DisplacementVectorDict()[str(self.Members[self.MemberNo-1].DoFNumber()[5])]]
+        """
         return MemberDisplacement
         
     def MemberForceLocal(self, MemberNumber, All = False):
@@ -798,6 +805,24 @@ class MemberResponse(GlobalResponse):
     def MemberNFD(self, MemberNumber):
         return None
     
+    def MemberDeflection(self, MemberNumber, ScaleFactor = 1, DisplacementDict= None):
+        
+        global FEDivision
+        MemberNo = int(MemberNumber)
+        member = self.Members[MemberNo - 1]
+        length = member.length()
+
+        if DisplacementDict == None:
+            Displacement = self.DisplacementVector()
+            DisplacementDict = Computer.ModelDisplacementList_To_Dict(Displacement, self.UnConstrainedDoF, self.TotalDoF)
+
+        MemberDisplacementGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber, DisplacementDict, self.Members)
+        MemberDisplacementLocal = np.dot((self.Members[MemberNumber-1].Transformation_Matrix()),MemberDisplacementGlobal)
+        self.DeflectionPosition, BeamDisplacement = Computer.Qudaratic_Interpolate_Displacements(MemberDisplacementLocal, length, FEDivision, ScaleFactor)
+        
+
+        return BeamDisplacement
+    
     def PlotMemberBMD(self, MemberNumber):
         
         self.MemberNo = int(MemberNumber)
@@ -888,6 +913,100 @@ class MemberResponse(GlobalResponse):
                 # Offset by moment value in perpendicular direction
                 x_points.append(x_pos + perp_dir[0] * moment)
                 y_points.append(y_pos + perp_dir[1] * moment)
+            
+            # Plot BMD as simple black line
+            ax.plot(x_points, y_points, color='black', linewidth=1)
+
+        ax.axis('equal')
+        plt.show()
+
+    def PlotMemberDeflection(self, MemberNumber):
+        
+        self.MemberNo = int(MemberNumber)
+        x_max = int(self.Members[self.MemberNo-1].length())
+        MemberDeflection = self.MemberDeflection(self.MemberNo)
+        y_m_max = int(max(MemberDeflection) * 2)
+        y_m_min = int(min(MemberDeflection) * 2)
+        
+        if y_m_max == 0:
+            y_m_max = 5
+        if y_m_min == 0:
+            y_m_min = -5
+        if y_m_max == y_m_min:
+            y_m_max = abs(y_m_max)
+            y_m_min = -abs(y_m_min)
+        
+        c = self.DeflectionPosition
+        d = MemberDeflection
+        g = [0, self.Members[self.MemberNo-1].length()]
+        h = [0, 0]
+        
+        plt.figure(figsize=(8, 5))
+        plt.plot(c, d, label="Deflection", color='red', linewidth=1.5)
+        plt.plot(g, h, label="Baseline", color='black', linewidth=1.5, linestyle='dashed')
+        
+        plt.xlabel('Distance (Meter)')
+        plt.ylabel('Deflection (m)')
+        plt.xticks(range(0, x_max + 1, max(1, round(self.Members[self.MemberNo-1].length() / 10))))
+        plt.yticks(range(y_m_min, y_m_max + 1, max(1, round((abs(y_m_max) + abs(y_m_min)) / 10))))
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend()
+        plt.title(f'Deflection of Member {self.MemberNo}')
+        plt.show()
+
+    def PlotGlobalDeflection(self, scale_factor = 1, show_structure=True):
+
+        """
+        Plots Deflection with optional structure visualization
+        scale_factor: Controls the visual scaling of BMD magnitudes
+        show_structure: If True, shows the structural elements
+        """
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("Deflection Diagrams")
+        
+        if show_structure:
+            computer_instance = Computer()
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
+        
+        DisplacementList = self.DisplacementVector()
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(DisplacementList, self.UnConstrainedDoF, self.TotalDoF)
+
+
+        # Determine global maximum absolute moment for scaling
+        max_abs_deflection = max(DisplacementList)
+        scale_factor = scale_factor / max_abs_deflection
+        
+        # Plot BMD for each member as simple lines
+        for member_idx, member in enumerate(self.Members):
+            # Get member properties
+            start = member.Start_Node
+            end = member.End_Node
+            L = member.length()
+            
+            # Get BMD values and positions
+            deflections = self.MemberDeflection(member_idx+1, scale_factor, DisplacementDict = DisplacementDict)
+            positions = self.DeflectionPosition
+            
+            # Calculate member orientation
+            dx = end.xcoordinate - start.xcoordinate
+            dy = end.ycoordinate - start.ycoordinate
+            angle = np.arctan2(dy, dx)
+            
+            # Create perpendicular direction vector
+            perp_dir = np.array([-np.sin(angle), np.cos(angle)])
+            
+            # Create points for BMD visualization
+            x_points = []
+            y_points = []
+            for pos, deflection in zip(positions, deflections):
+                # Calculate position along member
+                x_pos = start.xcoordinate + (dx * pos/L)
+                y_pos = start.ycoordinate + (dy * pos/L)
+                
+                # Offset by moment value in perpendicular direction
+                x_points.append(x_pos + perp_dir[0] * deflection)
+                y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot BMD as simple black line
             ax.plot(x_points, y_points, color='black', linewidth=1)
@@ -993,20 +1112,94 @@ class SecondOrderGlobalResponse(Model):
         
         return SupportForces
     
-    def BucklingEigenLoad(self):
+    def BucklingEigenLoad(self, EigenModeNo = False):
 
-        #preparing variables for computation
         gr_buck = self.UnConstrainedDoF()
-        #print("NormalForce", self.NormalForce())
+
         BGSMConden = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
         BGSMM_1st_Ord_condensed = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
-        CriticalLoad , mode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
-        #CriticalLoad , mode = eigsh(BGSMM_1st_Ord_condensed, k=6, M=BGSMConden, which='SM')
+        
+        CriticalLoad , x = eig(BGSMM_1st_Ord_condensed,BGSMConden)
+        if EigenModeNo:
+            x ,EigenMode = eigs(csc_matrix(BGSMM_1st_Ord_condensed), M = csc_matrix(BGSMConden), k = 10, which='SM')
+        
         CriticalLoad = sorted(CriticalLoad, key=lambda x: abs(x))
         CriticalLoad = [round(float(x.real), 2) for x in CriticalLoad]
+        print("Stability Eigen Calculated")
 
-        return min(filter(math.isfinite, [abs(z.real) for z in CriticalLoad])), CriticalLoad
+        return min(filter(math.isfinite, [abs(z.real) for z in CriticalLoad])), CriticalLoad, EigenMode
+    
+    def MemberEigenMode(self, MemberNumber, scale_factor = 1, EigenModeNo = 1, EigenVectorDict = None):
+        
+        global FEDivision
+        MemberNo = int(MemberNumber)
+        member = self.Members[MemberNo - 1]
+        length = member.length()
 
+        if EigenVectorDict == None:
+            EigenVector = self.BucklingEigenLoad(EigenModeNo = EigenModeNo)[2][:, (EigenModeNo-1)]
+            EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
+
+        EigenVectorGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNo, EigenVectorDict, self.Members)
+        EigenVectorLocal = np.dot((self.Members[MemberNo-1].Transformation_Matrix()), EigenVectorGlobal)
+        self.DeflectionPosition, BeamEigenVector = Computer.Linear_Interpolate_Displacements(EigenVectorLocal, length, FEDivision, scale_factor)
+        
+        return BeamEigenVector
+
+    def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, show_structure = True):
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("Eigen Mode")
+        
+        if show_structure:
+            computer_instance = Computer()
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
+
+        Eigen = self.BucklingEigenLoad(EigenModeNo = EigenModeNo)
+        print("Eigen Load", Eigen[0], Eigen[1])
+        EigenVector = Eigen[2][:,(EigenModeNo-1)]
+        EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
+        
+        # Determine global maximum absolute EigenDisp for scaling
+        max_abs_Eigendeflection = max_nested(EigenVector)
+        scale_factor = scale_factor / max_abs_Eigendeflection
+        
+        # Plot BMD for each member as lines
+        for member_idx, member in enumerate(self.Members):
+            # Get member properties
+            start = member.Start_Node
+            end = member.End_Node
+            L = member.length()
+            
+            # Get values and positions
+            EigenModeDeflections = self.MemberEigenMode(member_idx+1, scale_factor, EigenVectorDict = EigenVectorDict)
+            positions = self.DeflectionPosition
+            
+            # Calculate member orientation
+            dx = end.xcoordinate - start.xcoordinate
+            dy = end.ycoordinate - start.ycoordinate
+            angle = np.arctan2(dy, dx)
+            
+            # Create perpendicular direction vector
+            perp_dir = np.array([-np.sin(angle), np.cos(angle)])
+            
+            # Create points for BMD visualization
+            x_points = []
+            y_points = []
+            for pos, deflection in zip(positions, EigenModeDeflections):
+                # Calculate position along member
+                x_pos = start.xcoordinate + (dx * pos/L)
+                y_pos = start.ycoordinate + (dy * pos/L)
+                
+                # Offset by value in perpendicular direction
+                x_points.append(x_pos + perp_dir[0] * deflection)
+                y_points.append(y_pos + perp_dir[1] * deflection)
+            
+            # Plot as simple black line
+            ax.plot(x_points, y_points, color='black', linewidth=1)
+
+        ax.axis('equal')
+        plt.show()
 
 class SecondOrderMemberResponse(SecondOrderGlobalResponse):
     
@@ -1180,7 +1373,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll = self.MemberForceLocal(1, All=True)
         
