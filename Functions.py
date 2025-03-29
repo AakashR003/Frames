@@ -32,6 +32,10 @@ def print_class_Objects(objects, list_name=None):
     print("]")
 
 
+def max_nested(lst):
+    return max([max_nested(sub) if isinstance(sub, list) else sub for sub in lst])
+
+
 
 
 """

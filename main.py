@@ -12,10 +12,13 @@ from scipy.linalg import eig
 #import importlib
 import math
 import scipy.sparse as sp
-from scipy.sparse.linalg import eigsh, cg
+from scipy.sparse.linalg import eigs, cg
 from sksparse.cholmod import cholesky
+from scipy.sparse import csc_matrix
+
 
 from Computer import Computer
+from Functions import max_nested
 #import time
 
 
@@ -815,7 +818,7 @@ class MemberResponse(GlobalResponse):
 
         MemberDisplacementGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber, DisplacementDict, self.Members)
         MemberDisplacementLocal = np.dot((self.Members[MemberNumber-1].Transformation_Matrix()),MemberDisplacementGlobal)
-        self.DeflectionPosition, BeamDisplacement = Computer.Interpolate_Displacements(MemberDisplacementLocal, length, FEDivision, ScaleFactor)
+        self.DeflectionPosition, BeamDisplacement = Computer.Qudaratic_Interpolate_Displacements(MemberDisplacementLocal, length, FEDivision, ScaleFactor)
         
 
         return BeamDisplacement
@@ -964,7 +967,7 @@ class MemberResponse(GlobalResponse):
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         DisplacementList = self.DisplacementVector()
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(DisplacementList, self.UnConstrainedDoF, self.TotalDoF)
@@ -1109,21 +1112,24 @@ class SecondOrderGlobalResponse(Model):
         
         return SupportForces
     
-    def BucklingEigenLoad(self):
+    def BucklingEigenLoad(self, EigenModeNo = False):
 
-        #preparing variables for computation
         gr_buck = self.UnConstrainedDoF()
-        #print("NormalForce", self.NormalForce())
+
         BGSMConden = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
         BGSMM_1st_Ord_condensed = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
-        CriticalLoad , EigenMode=eig(BGSMM_1st_Ord_condensed,BGSMConden)
-        #CriticalLoad , mode = eigsh(BGSMM_1st_Ord_condensed, k=6, M=BGSMConden, which='SM')
+        
+        CriticalLoad , x = eig(BGSMM_1st_Ord_condensed,BGSMConden)
+        if EigenModeNo:
+            x ,EigenMode = eigs(csc_matrix(BGSMM_1st_Ord_condensed), M = csc_matrix(BGSMConden), k = 10, which='SM')
+        
         CriticalLoad = sorted(CriticalLoad, key=lambda x: abs(x))
         CriticalLoad = [round(float(x.real), 2) for x in CriticalLoad]
         print("Stability Eigen Calculated")
+
         return min(filter(math.isfinite, [abs(z.real) for z in CriticalLoad])), CriticalLoad, EigenMode
     
-    def MemberEigenMode(self, MemberNumber, ScaleFactor = 1, EigenModeNo = 1, EigenVectorDict = None):
+    def MemberEigenMode(self, MemberNumber, scale_factor = 1, EigenModeNo = 1, EigenVectorDict = None):
         
         global FEDivision
         MemberNo = int(MemberNumber)
@@ -1131,39 +1137,41 @@ class SecondOrderGlobalResponse(Model):
         length = member.length()
 
         if EigenVectorDict == None:
-            EigenVector = self.BucklingEigenLoad()[2][EigenModeNo-1]
+            EigenVector = self.BucklingEigenLoad(EigenModeNo = EigenModeNo)[2][:, (EigenModeNo-1)]
             EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
 
-        EigenVectorGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber, EigenVectorDict, self.Members)
-        EigenVectorLocal = np.dot((self.Members[MemberNumber-1].Transformation_Matrix()), EigenVectorGlobal)
-        self.DeflectionPosition, BeamEigenVector = Computer.Interpolate_Displacements(EigenVectorLocal, length, FEDivision, ScaleFactor)
+        EigenVectorGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNo, EigenVectorDict, self.Members)
+        EigenVectorLocal = np.dot((self.Members[MemberNo-1].Transformation_Matrix()), EigenVectorGlobal)
+        self.DeflectionPosition, BeamEigenVector = Computer.Linear_Interpolate_Displacements(EigenVectorLocal, length, FEDivision, scale_factor)
         
         return BeamEigenVector
 
-    def PlotEigenMode(self, EigenModeNo, scale_factor = 1, show_structure = True):
+    def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, show_structure = True):
 
         fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_title("Deflection Diagrams")
+        ax.set_title("Eigen Mode")
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
 
-        EigenVector = self.BucklingEigenLoad()[2][EigenModeNo-1]
+        Eigen = self.BucklingEigenLoad(EigenModeNo = EigenModeNo)
+        print("Eigen Load", Eigen[0], Eigen[1])
+        EigenVector = Eigen[2][:,(EigenModeNo-1)]
         EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
         
         # Determine global maximum absolute EigenDisp for scaling
-        max_abs_deflection = max(EigenVector)
-        #scale_factor = scale_factor / max_abs_Eigendeflection
+        max_abs_Eigendeflection = max_nested(EigenVector)
+        scale_factor = scale_factor / max_abs_Eigendeflection
         
-        # Plot BMD for each member as simple lines
+        # Plot BMD for each member as lines
         for member_idx, member in enumerate(self.Members):
             # Get member properties
             start = member.Start_Node
             end = member.End_Node
             L = member.length()
             
-            # Get BMD values and positions
+            # Get values and positions
             EigenModeDeflections = self.MemberEigenMode(member_idx+1, scale_factor, EigenVectorDict = EigenVectorDict)
             positions = self.DeflectionPosition
             
@@ -1183,11 +1191,11 @@ class SecondOrderGlobalResponse(Model):
                 x_pos = start.xcoordinate + (dx * pos/L)
                 y_pos = start.ycoordinate + (dy * pos/L)
                 
-                # Offset by moment value in perpendicular direction
+                # Offset by value in perpendicular direction
                 x_points.append(x_pos + perp_dir[0] * deflection)
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
-            # Plot BMD as simple black line
+            # Plot as simple black line
             ax.plot(x_points, y_points, color='black', linewidth=1)
 
         ax.axis('equal')
@@ -1365,7 +1373,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll = self.MemberForceLocal(1, All=True)
         

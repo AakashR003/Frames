@@ -120,7 +120,7 @@ class Computer():
     def ForceLocal_To_ForceGlobal(StiffnessMatrixType, MemberNumber, Members, MemberDisplacement, Loads, NormalForce = None):
         return None
     
-    def Interpolate_Displacements(MemberDisplacment, length, n_points, ScaleFcator = 1 ):
+    def Linear_Interpolate_Displacements(MemberDisplacment, length, n_points, scale_factor = 1 ):
         """
         Compute displacements at `n_points` along a beam element using shape functions.
 
@@ -134,9 +134,53 @@ class Computer():
                 x_values (list): Positions along the beam from 0 to `length`.
                 displacements (list): Interpolated displacements at each position.
         """
-        MemberDisplacment = np.array(MemberDisplacment) * ScaleFcator
+        MemberDisplacment = np.array(MemberDisplacment) * scale_factor
         u_i, v_i, theta_i, u_j, v_j, theta_j = MemberDisplacment
-           
+
+        # Generate x values from 0 to length
+        if n_points <= 1:
+            x_values = [0.0]
+        else:
+            x_values = []
+            x_valuesOutput = []
+            for i in range(n_points):
+                x = i*length/(n_points - 1) 
+                x_values.append(x)
+                x_valuesOutput.append( x + (u_i * (1-x/length)) + (u_j * x/length) )
+        
+        displacements = []
+        for x in x_values:
+            L = length
+            # Compute generalized shape functions for any beam length L
+
+            N1 = (1-x/length)
+            N3 = x/length
+            N2 = 0
+            N4 = 0
+            
+            # Calculate displacement
+            v = N1 * v_i + N2 * theta_i + N3 * v_j + N4 * theta_j
+            displacements.append(v)
+        
+        return x_valuesOutput, displacements
+    
+    def Qudaratic_Interpolate_Displacements(MemberDisplacment, length, n_points,scale_factor = 1 ):
+        """
+        Compute displacements at `n_points` along a beam element using shape functions.
+
+        Parameters:
+            nodal_values (list): List of nodal values [v_i, θ_i, v_j, θ_j].
+            length (float): Length of the beam element (must be > 0).
+            n_points (int): Number of points to interpolate (including endpoints).
+
+        Returns:
+            tuple: (x_values, displacements)
+                x_values (list): Positions along the beam from 0 to `length`.
+                displacements (list): Interpolated displacements at each position.
+        """
+        MemberDisplacment = np.array(MemberDisplacment) * scale_factor
+        u_i, v_i, theta_i, u_j, v_j, theta_j = MemberDisplacment
+
         # Generate x values from 0 to length
         if n_points <= 1:
             x_values = [0.0]
@@ -164,7 +208,7 @@ class Computer():
         
         return x_valuesOutput, displacements
 
-    def PlotStructuralElements(self, ax, Members, Points, sensitivities=None):
+    def PlotStructuralElements(self, ax, Members, Points, ShowNodeNumber = True, sensitivities=None):
         """
         Helper function to plot structural elements (members, nodes, supports)
         ax: matplotlib axes object to plot on
@@ -196,7 +240,8 @@ class Computer():
             ax.plot(node.xcoordinate, node.ycoordinate, 'ro')
             
             # Add node numbers
-            ax.text(node.xcoordinate, node.ycoordinate + 0.2, f"{i+1}", 
+            if ShowNodeNumber:
+                ax.text(node.xcoordinate, node.ycoordinate + 0.2, f"{i+1}", 
                    fontsize=12, ha='center', va='bottom', color='black')
 
             # Plot support conditions
