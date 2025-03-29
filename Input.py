@@ -66,4 +66,5 @@ Model1.PlotGlobalModel()
 #print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
 
-print("EigenFrequency", DynamicResponse1.EigeFrequency())
+#print("EigenFrequency", DynamicResponse1.EigenFrequency())
+#DynamicResponse1.PlotDynamicEigenMode()
