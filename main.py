@@ -69,7 +69,7 @@ class Node():
     
 class Member():
     
-    def __init__ (self, Beam_Number, Start_Node, End_Node, Area, Youngs_Modulus, Moment_of_Inertia ):
+    def __init__ (self, Beam_Number, Start_Node, End_Node, Area, Youngs_Modulus, Moment_of_Inertia, Density = 7850 ):
         
         self.Beam_Number = Beam_Number
         self.Start_Node = Start_Node
@@ -78,6 +78,7 @@ class Member():
         self.area=Area
         self.youngs_modulus = Youngs_Modulus
         self.moment_of_inertia = Moment_of_Inertia
+        self.Density = Density
         
     def length(self):
         x=((self.End_Node.xcoordinate-self.Start_Node.xcoordinate)**2 +
@@ -200,6 +201,27 @@ class Member():
     def Second_Order_Global_Stiffness_Matrix_2(self, NormalForce):
 
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.Second_Order_Local_Stiffness_Matrix_2(NormalForce)) @ np.array(self.Transformation_Matrix())
+
+    def Local_Mass_Matrix(self):
+
+        L = self.Length
+        mu = self.area * self.Density
+
+        MassMatrix = [
+                    [140 * mu * L / 420, 0, 0, 70 * mu * L / 420, 0, 0],
+                    [0, 156 * mu * L / 420, 22 * mu * L**2 / 420, 0, 54 * mu * L / 420, -13 * mu * L**2 / 420],
+                    [0, 22 * mu * L**2 / 420, 4 * mu * L**3 / 420, 0, 13 * mu * L**2 / 420, -3 * mu * L**3 / 420],
+                    [70 * mu * L / 420, 0, 0, 140 * mu * L / 420, 0, 0],
+                    [0, 54 * mu * L / 420, 13 * mu * L**2 / 420, 0, 156 * mu * L / 420, -22 * mu * L**2 / 420],
+                    [0, -13 * mu * L**2 / 420, -3 * mu * L**3 / 420, 0, -22 * mu * L**2 / 420, 4 * mu * L**3 / 420]
+                    ]
+
+
+        return MassMatrix
+    
+    def Global_Mass_Matrix(self):
+        
+        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Local_Mass_Matrix) @ np.array(self.Transformation_Matrix())
 
 
 class Stiffness_Matrix():
@@ -1532,6 +1554,29 @@ class Comparision():
         ax.axis('equal')
         plt.show()
 
+
+class DynamicGlobalResponse(Model):
+
+    def EigeFrequency(self):
+
+        dof = self.UnConstrainedDoF()
+
+        MM_Conden = Computer.StiffnessMatrixAssembler(dof,self.Members,"Global_Mass_Matrix")
+        _1st_OrdSM_condensed = Computer.StiffnessMatrixAssembler(dof,self.Members,"First_Order_Global_Stiffness_Matrix_1")
+        
+        EigenFreq , x = eig(_1st_OrdSM_condensed, MM_Conden)
+        #if EigenModeNo:
+        #    x ,EigenMode = eigs(csc_matrix(_1st_OrdSM_condensed), M = csc_matrix(MM_Conden), k = 10, which='SM')
+        
+        EigenFreq = sorted(EigenFreq, key=lambda x: abs(x))
+        EigenFreq = [round(float(x.real), 2) for x in EigenFreq]
+        print("Dynamic Eigen Calculated")
+
+        return min(filter(math.isfinite, [abs(z.real) for z in EigenFreq])), EigenFreq
+
+        return None
+    def PlotDynamicEigenMode(self):
+        return None
 
 class Senstivity(GlobalResponse):
 
