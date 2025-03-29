@@ -1141,7 +1141,7 @@ class SecondOrderGlobalResponse(Model):
         BGSMConden = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
         BGSMM_1st_Ord_condensed = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         
-        CriticalLoad , x = eig(BGSMM_1st_Ord_condensed,BGSMConden)
+        CriticalLoad , EigenMode = eig(BGSMM_1st_Ord_condensed,BGSMConden)
         if EigenModeNo:
             x ,EigenMode = eigs(csc_matrix(BGSMM_1st_Ord_condensed), M = csc_matrix(BGSMConden), k = 10, which='SM')
         
