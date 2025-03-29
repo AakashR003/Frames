@@ -220,9 +220,6 @@ class Member():
         return MassMatrix
     
     def Global_Mass_Matrix(self):
-
-        #print(self.Transformation_Matrix)
-        #print(self.Local_Mass_Matrix)
         
         return np.transpose(self.Transformation_Matrix()) @ np.array(self.Local_Mass_Matrix()) @ np.array(self.Transformation_Matrix())
 
@@ -1172,7 +1169,7 @@ class SecondOrderGlobalResponse(Model):
         return BeamEigenVector
 
     def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, show_structure = True):
-
+        deleteList =[]
         fig, ax = plt.subplots(figsize=(12, 8))
         ax.set_title("Eigen Mode")
         
@@ -1198,6 +1195,7 @@ class SecondOrderGlobalResponse(Model):
             
             # Get values and positions
             EigenModeDeflections = self.MemberEigenMode(member_idx+1, scale_factor, EigenVectorDict = EigenVectorDict)
+            deleteList.append(EigenModeDeflections)
             positions = self.DeflectionPosition
             
             # Calculate member orientation
@@ -1224,6 +1222,7 @@ class SecondOrderGlobalResponse(Model):
             ax.plot(x_points, y_points, color='black', linewidth=1)
 
         ax.axis('equal')
+        print(deleteList)
         plt.show()
 
 
@@ -1574,7 +1573,7 @@ class DynamicGlobalResponse(Model):
         
         EigenFreq = sorted(EigenFreq, key=lambda x: abs(x)) # answer will be in radians - converting to Hz 
         EigenFreq = [round(float(x.real)**0.5/(2*np.pi), 2) for x in EigenFreq]
-        print("Dynamic Eigen Calculated in Hertz")
+        print("Dynamic Eigen Calculated in Hertz", EigenFreq)
 
         return min(filter(math.isfinite, [abs(z.real) for z in EigenFreq])), EigenFreq, EigenMode
 

@@ -9,21 +9,21 @@ main.FEDivision = 20
 #Model Parts - Basic essential for building a model
 Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
-Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Fixed Support"),
-#Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Rigid Joint"),
-#Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Hinged Support")
+Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
+Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Rigid Joint"),
+Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Hinged Support")
 ]
 
 
 Members = [
-Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.016, Youngs_Modulus=200000000, Moment_of_Inertia=2.13333E-07),
-#Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
-#Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 ] # square cross section - 0.3 x 0.3, units N, m
 
 
 Loads = [
-NeumanBC(type="PL", Magnitude=10000, Distance1= 2.5, AssignedTo="Member 1", Members = Members)
+NeumanBC(type="PL", Magnitude=10000, Distance1= 2.5, AssignedTo="Member 2", Members = Members)
 ] 
 
 
@@ -64,7 +64,7 @@ Model1.PlotGlobalModel()
 #Comparision1.PlotGlobalBMDComparison()
 #MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
-#SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
+SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
 
-print("EigenFrequency", DynamicResponse1.EigenFrequency())
-DynamicResponse1.PlotDynamicEigenMode()
+#print("EigenFrequency", DynamicResponse1.EigenFrequency())
+#DynamicResponse1.PlotDynamicEigenMode()
