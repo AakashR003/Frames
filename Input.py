@@ -1,5 +1,5 @@
 import main
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, NodalResponse, SecondOrderGlobalResponse, SecondOrderMemberResponse, Comparision
+from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, NodalResponse, SecondOrderGlobalResponse, SecondOrderMemberResponse, Comparision, DynamicGlobalResponse
 from FiniteElementDivisor import divide_into_finite_elements
 from Functions import print_class_Objects
 
@@ -41,6 +41,7 @@ MemberRes1 = MemberResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderResponse1 = SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
 Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberResponse1)
+DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 
 
 Model1.PlotGlobalModel()
@@ -64,3 +65,5 @@ Model1.PlotGlobalModel()
 #MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
+
+print("EigenFrequency", DynamicResponse1.EigeFrequency())
