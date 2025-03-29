@@ -204,7 +204,7 @@ class Member():
 
     def Local_Mass_Matrix(self):
 
-        L = self.Length
+        L = self.length()
         mu = self.area * self.Density
 
         MassMatrix = [
@@ -220,8 +220,11 @@ class Member():
         return MassMatrix
     
     def Global_Mass_Matrix(self):
+
+        #print(self.Transformation_Matrix)
+        #print(self.Local_Mass_Matrix)
         
-        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Local_Mass_Matrix) @ np.array(self.Transformation_Matrix())
+        return np.transpose(self.Transformation_Matrix()) @ np.array(self.Local_Mass_Matrix()) @ np.array(self.Transformation_Matrix())
 
 
 class Stiffness_Matrix():
@@ -1223,6 +1226,7 @@ class SecondOrderGlobalResponse(Model):
         ax.axis('equal')
         plt.show()
 
+
 class SecondOrderMemberResponse(SecondOrderGlobalResponse):
     
     """
@@ -1557,26 +1561,95 @@ class Comparision():
 
 class DynamicGlobalResponse(Model):
 
-    def EigeFrequency(self):
+    def EigenFrequency(self, EigenModeNo = False):
 
         dof = self.UnConstrainedDoF()
 
         MM_Conden = Computer.StiffnessMatrixAssembler(dof,self.Members,"Global_Mass_Matrix")
         _1st_OrdSM_condensed = Computer.StiffnessMatrixAssembler(dof,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         
-        EigenFreq , x = eig(_1st_OrdSM_condensed, MM_Conden)
-        #if EigenModeNo:
-        #    x ,EigenMode = eigs(csc_matrix(_1st_OrdSM_condensed), M = csc_matrix(MM_Conden), k = 10, which='SM')
+        EigenFreq , EigenMode = eig(_1st_OrdSM_condensed, MM_Conden)
+        if EigenModeNo:
+            x , EigenMode = eigs(csc_matrix(_1st_OrdSM_condensed), M = csc_matrix(MM_Conden), k = 10, which='SM')
         
-        EigenFreq = sorted(EigenFreq, key=lambda x: abs(x))
-        EigenFreq = [round(float(x.real), 2) for x in EigenFreq]
-        print("Dynamic Eigen Calculated")
+        EigenFreq = sorted(EigenFreq, key=lambda x: abs(x)) # answer will be in radians - converting to Hz 
+        EigenFreq = [round(float(x.real)**0.5/(2*np.pi), 2) for x in EigenFreq]
+        print("Dynamic Eigen Calculated in Hertz")
 
-        return min(filter(math.isfinite, [abs(z.real) for z in EigenFreq])), EigenFreq
+        return min(filter(math.isfinite, [abs(z.real) for z in EigenFreq])), EigenFreq, EigenMode
 
-        return None
-    def PlotDynamicEigenMode(self):
-        return None
+    def MemberEigenMode(self, MemberNumber, scale_factor = 10000, EigenModeNo = 2, EigenVectorDict = None):
+        
+        global FEDivision
+        MemberNo = int(MemberNumber)
+        member = self.Members[MemberNo - 1]
+        length = member.length()
+
+        if EigenVectorDict == None:
+            EigenVector = self.EigenFrequency(EigenModeNo = EigenModeNo)[2][:, (EigenModeNo-1)]
+            EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
+
+        EigenVectorGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNo, EigenVectorDict, self.Members)
+        EigenVectorLocal = np.dot((self.Members[MemberNo-1].Transformation_Matrix()), EigenVectorGlobal)
+        self.DeflectionPosition, BeamEigenVector = Computer.Linear_Interpolate_Displacements(EigenVectorLocal, length, FEDivision, scale_factor)
+        
+        return BeamEigenVector
+
+
+    def PlotDynamicEigenMode(self, EigenModeNo = -1, scale_factor = 1, show_structure = True):
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("Dynamic Eigen Mode")
+        
+        if show_structure:
+            computer_instance = Computer()
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
+
+        Eigen = self.EigenFrequency(EigenModeNo = EigenModeNo)
+        print("Eigen Load", Eigen[0], Eigen[1])
+        EigenVector = Eigen[2][:,(EigenModeNo-1)]
+        EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
+        
+        # Determine global maximum absolute EigenDisp for scaling
+        max_abs_Eigendeflection = max_nested(EigenVector)
+        scale_factor = scale_factor / max_abs_Eigendeflection
+        
+        # Plot BMD for each member as lines
+        for member_idx, member in enumerate(self.Members):
+            # Get member properties
+            start = member.Start_Node
+            end = member.End_Node
+            L = member.length()
+            
+            # Get values and positions
+            EigenModeDeflections = self.MemberEigenMode(member_idx+1, scale_factor, EigenVectorDict = EigenVectorDict)
+            positions = self.DeflectionPosition
+            
+            # Calculate member orientation
+            dx = end.xcoordinate - start.xcoordinate
+            dy = end.ycoordinate - start.ycoordinate
+            angle = np.arctan2(dy, dx)
+            
+            # Create perpendicular direction vector
+            perp_dir = np.array([-np.sin(angle), np.cos(angle)])
+            
+            # Create points for BMD visualization
+            x_points = []
+            y_points = []
+            for pos, deflection in zip(positions, EigenModeDeflections):
+                # Calculate position along member
+                x_pos = start.xcoordinate + (dx * pos/L)
+                y_pos = start.ycoordinate + (dy * pos/L)
+                
+                # Offset by value in perpendicular direction
+                x_points.append(x_pos + perp_dir[0] * deflection)
+                y_points.append(y_pos + perp_dir[1] * deflection)
+            
+            # Plot as simple black line
+            ax.plot(x_points, y_points, color='black', linewidth=1)
+
+        ax.axis('equal')
+        plt.show()
 
 class Senstivity(GlobalResponse):
 
