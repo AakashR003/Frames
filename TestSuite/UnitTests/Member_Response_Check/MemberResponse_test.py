@@ -1,13 +1,17 @@
-import main
+
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
+
+from config import config
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from FirstOrderResponse import FirstOrderGlobalResponse, FirstOrderMemberResponse
 
 
 
 def test_MemberForce():
 
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
         Node(Node_Number=2, xcoordinate=10, ycoordinate=0, Support_Condition="Rigid Joint"),
@@ -21,9 +25,9 @@ def test_MemberForce():
         NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=10, AssignedTo="Member 1", Members = MembersT),
         NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=10, AssignedTo="Member 2", Members = MembersT)
     ]
-    ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    GlobalResponseT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    MemberResT = MemberResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
+    #ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    GlobalResponseT = FirstOrderGlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    MemberResT = FirstOrderMemberResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
 
     Member1Force = MemberResT.MemberForceLocal(1)
     print(GlobalResponseT.SupportForcesVector())

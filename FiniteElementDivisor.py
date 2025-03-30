@@ -1,5 +1,5 @@
 
-from main import Node, Member, NeumanBC
+from StructuralElements import Node, Member
 
 # Finite Element maker
 def divide_into_finite_elements(nodes, members, loads, num_elements):

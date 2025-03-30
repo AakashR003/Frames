@@ -1,12 +1,17 @@
-import main
+
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, SecondOrderGlobalResponse
+
+from config import config
+from main import Model
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from SecondOrderResponse import  SecondOrderGlobalResponse
 
 
 @pytest.fixture
 def setup_model():
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=0, ycoordinate=1, Support_Condition="Rigid Joint"),
@@ -42,14 +47,14 @@ def setup_model():
     ]
 
     ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    #ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    #MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
     SecondOrderResponseT = SecondOrderGlobalResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
 
-    return ModelT, ResT, MembersT, MemberResponseT,  SecondOrderResponseT
+    return SecondOrderResponseT
 
 def test_NormalForce(setup_model): #test the normal force which is the reason for reduction 2nd order matrix
-    ModelT, GlobalResponseT, MembersT, MemberResponseT, SecondOrderResponseT = setup_model
+    SecondOrderResponseT = setup_model
 
     NormalForceT = SecondOrderResponseT.NormalForce()
     NormalForceR = [218.3,218.3,218.3,218.3,218.3,30.8,30.8,30.8,30.8,30.8]
@@ -58,7 +63,7 @@ def test_NormalForce(setup_model): #test the normal force which is the reason fo
 
 
 def test_FirstEigenLoad(setup_model):
-    ModelT, GlobalResponseT, MembersT, MemberResponseT, SecondOrderResponseT = setup_model
+    SecondOrderResponseT = setup_model
 
     EigenValueT = SecondOrderResponseT.BucklingEigenLoad()[0]
     EigenValueR = 670

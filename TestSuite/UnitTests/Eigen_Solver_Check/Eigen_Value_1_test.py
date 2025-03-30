@@ -1,13 +1,18 @@
-import main
+
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, SecondOrderGlobalResponse
+
+from config import config
+from main import Model
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from SecondOrderResponse import  SecondOrderGlobalResponse
 
 @pytest.fixture
 def setup_model1():
 
     # Cantilivered L-frame with Point load which can be also teated as cantilivered beam Eigen value problem
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
@@ -22,14 +27,14 @@ def setup_model1():
     ]
 
     ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    #ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    #MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
     SecondOrderResponseT = SecondOrderGlobalResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
 
-    return ModelT, ResT, MembersT, MemberResponseT,  SecondOrderResponseT
+    return SecondOrderResponseT
 
 def test_FirstEigenLoad_1(setup_model1):
-    ModelT, GlobalResponseT, MembersT, MemberResponseT, SecondOrderResponseT = setup_model1
+    SecondOrderResponseT = setup_model1
 
     EigenValue = SecondOrderResponseT.BucklingEigenLoad()[0]
     EigenValueR = 133.0
@@ -40,7 +45,7 @@ def test_FirstEigenLoad_1(setup_model1):
 @pytest.fixture
 def setup_model2():
     #Model Parts - Basic essential for building a model
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=0, ycoordinate=1, Support_Condition="Rigid Joint"),
@@ -63,14 +68,14 @@ def setup_model2():
     ]
 
     ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    #ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    #MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
     SecondOrderResponseT = SecondOrderGlobalResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
 
-    return ModelT, ResT, MembersT, MemberResponseT,  SecondOrderResponseT
+    return SecondOrderResponseT
 
 def test_FirstEigenLoad_2(setup_model2):
-    ModelT, GlobalResponseT, MembersT, MemberResponseT, SecondOrderResponseT = setup_model2
+    SecondOrderResponseT = setup_model2
 
     EigenValue = SecondOrderResponseT.BucklingEigenLoad()[0]
     EigenValueR = 133.0

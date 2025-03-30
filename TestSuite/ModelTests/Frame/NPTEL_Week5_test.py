@@ -1,13 +1,17 @@
 """ NPTEL Week - 7 example"""
 
-import main
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
+
+from config import config
+from main import Model
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from FirstOrderResponse import FirstOrderGlobalResponse, FirstOrderMemberResponse, FirstOrderNodalResponse
 
 "PointsT - T stands for test"
 
-main.FEDivision = 1000
+config.set_FEDivision(1000)
 PointsT = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=240,ycoordinate=180,Support_Condition="Rigid Joint"),
               Node(Node_Number=3,xcoordinate=480,ycoordinate=180,Support_Condition="Fixed Support")] 
@@ -20,8 +24,8 @@ LoadsT = [NeumanBC(type="UDL",Magnitude=0.25,Distance1=0,Distance2=240,AssignedT
 
 
 ModelT = Model(Points = PointsT, Members = MembersT, Loads = LoadsT)
-GlobalResponseT = GlobalResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
-MemberResT = MemberResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
+GlobalResponseT = FirstOrderGlobalResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
+MemberResT = FirstOrderMemberResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
 
 
 def test_MSML(): #Member Stiffness Matrix Local Coordinate
