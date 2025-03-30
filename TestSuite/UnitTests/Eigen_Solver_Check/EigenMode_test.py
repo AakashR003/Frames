@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-import main
+from config import config 
 from main import Model
 from StructuralElements import Node, Member
 import Loads
@@ -14,7 +14,7 @@ from FiniteElementDivisor import divide_into_finite_elements
 def setup_model():
 
     # Cantilivered L-frame with Point load which can be also teated as cantilivered beam Eigen value problem
-    Loads.FEDivision = 20
+    config.set_FEDivision(20)
     #Model Parts - Basic essential for building a model
     PointsT = [
     Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
