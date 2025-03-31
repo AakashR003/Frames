@@ -5,14 +5,17 @@ Created on Mon Jan 27 03:17:40 2025
 @author: aakas
 """
 
-import main
+
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
+
+from config import config
+from main import Model
+from StructuralElements import Node, Member
 
 # Test function for Member Stiffness Matrix( From NPTEL) in Global Coordinates 
 def test_MSMG(): #Member Stiffness Matrix Global Coordinate
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),
               Node(Node_Number=2,xcoordinate=10,ycoordinate=5,Support_Condition="Hinged Support"),
               Node(Node_Number=3,xcoordinate=20,ycoordinate=0,Support_Condition="Rigid Joint")] 

@@ -5,14 +5,18 @@ Created on Mon Jan 27 04:23:42 2025
 @author: aakas
 """
 
-import main
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse
+
+from config import config
+from main import Model
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from FirstOrderResponse import FirstOrderGlobalResponse, FirstOrderMemberResponse
 
 @pytest.fixture
 def setup_model():
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     PointsT = [
         Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
         Node(Node_Number=2, xcoordinate=10, ycoordinate=0, Support_Condition="Rigid Joint"),
@@ -27,8 +31,8 @@ def setup_model():
         NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=10, AssignedTo="Member 2", Members = MembersT)
     ]
     Model1 = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    Res = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    Res = FirstOrderGlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
+    MemberResponseT = FirstOrderMemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
     return Model1, Res, MembersT, MemberResponseT
 
 def test_FixedBeamUDL(setup_model):

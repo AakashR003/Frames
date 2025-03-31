@@ -1,13 +1,17 @@
-import main
+
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, SecondOrderGlobalResponse
+
+from config import config
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from SecondOrderResponse import  SecondOrderGlobalResponse
 from FiniteElementDivisor import divide_into_finite_elements
 
 
 @pytest.fixture
 def setup_model():
-    main.FEDivision = 1000
+    config.set_FEDivision(1000)
     PointsT = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Hinged Support"),
             Node(Node_Number=2,xcoordinate=0,ycoordinate=5,Support_Condition="Rigid Joint"),
             Node(Node_Number=3,xcoordinate=5,ycoordinate=10,Support_Condition="Rigid Joint"),

@@ -1,4 +1,8 @@
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, NodalResponse, Senstivity
+
+from main import Model
+from StructuralElements import Node, Member
+from Loads import NeumanBC
+from Sensitivity import Senstivity
 
 # Nodes for Howe Truss
 Points = [

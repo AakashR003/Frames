@@ -1,8 +1,12 @@
-
-import main
 import pytest
 import numpy as np
-from main import Node, Member, NeumanBC, Model, GlobalResponse, MemberResponse, SecondOrderGlobalResponse, DynamicGlobalResponse
+
+from config import config 
+from main import Model
+from StructuralElements import Node, Member
+import Loads
+from Loads import NeumanBC
+from SecondOrderResponse import  SecondOrderGlobalResponse, SecondOrderMemberResponse
 from FiniteElementDivisor import divide_into_finite_elements
 
 
@@ -10,7 +14,7 @@ from FiniteElementDivisor import divide_into_finite_elements
 def setup_model():
 
     # Cantilivered L-frame with Point load which can be also teated as cantilivered beam Eigen value problem
-    main.FEDivision = 20
+    config.set_FEDivision(20)
     #Model Parts - Basic essential for building a model
     PointsT = [
     Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
@@ -37,14 +41,12 @@ def setup_model():
 
     PointsT, MembersT, LoadsT = divide_into_finite_elements(PointsT, MembersT, LoadsT, 10)
     ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    ResT = GlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
-    MemberResponseT = MemberResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)
     SecondOrderResponseT = SecondOrderGlobalResponse(Points = PointsT, Members = MembersT, Loads = LoadsT)
 
-    return ModelT, ResT, MembersT, MemberResponseT, SecondOrderResponseT
+    return SecondOrderResponseT
 
 def test_BucklingEigenValue(setup_model):
-    ModelT, GlobalResponseT, MembersT, MemberResponseT, SecondOrderResponseT = setup_model
+    SecondOrderResponseT = setup_model
 
     EigenValueT = SecondOrderResponseT.BucklingEigenLoad()[1]
     EigenValueR = [4.74, 15.37, 29.83, 46.43, 71.93, 95.78, 131.98, 162.91, 207.2, 241.59, 280.72, 339.62, 380.98, 448.06, 501.49, 556.3, 646.93, 699.28, 820.02, 875.9, 975.31, 1069.85, 1235.49, 1337.12, 1461.76, 1571.79, 1738.44, 1853.11, 2061.18, 2208.83, 2383.18, 2581.07, 2681.71, 2789.69, 3056.47, 3275.76, 3481.55, 3481.55, 3481.55, 3481.55, 3481.55, 3481.55, 3481.55, 3481.55, 3481.55, 3493.73, 
@@ -56,7 +58,7 @@ def test_BucklingEigenValue(setup_model):
 
 
 def Test_BucklingEigenMode(setup_model):
-    ModelT, GlobalResponseT, MembersT, MemberResponseT, SecondOrderResponseT = setup_model
+    SecondOrderResponseT = setup_model
     "Not checked implement in future with text document to eigen modes"
     EigenMode1T = SecondOrderResponseT.BucklingEigenLoad(EigenModeNo = True)[2][:,0]
     EigenMode2T = SecondOrderResponseT.BucklingEigenLoad(EigenModeNo = True)[2][:,1]
