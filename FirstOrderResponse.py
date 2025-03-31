@@ -146,7 +146,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
 
     def MemberBMD(self, MemberNumber, MemberForceLocal=None):
 
-        """ This FUnction computes Bending moment diagram along the length of the beam by using MemberForceLocal.
+        """ This Function computes Bending moment diagram along the length of the beam by using MemberForceLocal.
         If MemberForceLocal is not provided, it computes MemberForceLocal using MemberForceLocal function.
         It divides the length of the beam into FEDivision parts and computes the BMD at each part. At each part, it computes
         the Fixed end moment and SS beam moment from Neuman class output and combines them to get the total moment distribution"""

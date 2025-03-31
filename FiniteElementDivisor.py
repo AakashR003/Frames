@@ -1,5 +1,7 @@
-
-from StructuralElements import Node, Member
+try:
+    from .StructuralElements import Node, Member
+except:
+    from StructuralElements import Node, Member
 
 # Finite Element maker
 def divide_into_finite_elements(nodes, members, loads, num_elements):
