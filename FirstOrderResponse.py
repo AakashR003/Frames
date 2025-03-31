@@ -192,9 +192,10 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
 
         return self.MemberMoment
     
-    def MemberSFD(self, MemberNumber):
-        self.MemberBMD(MemberNumber)
+    def MemberSFD(self, MemberNumber, MemberForceLocal=None):
+        self.MemberBMD(MemberNumber, MemberForceLocal)
         
+
         return self.MemberShear
     
     def MemberAmplitude(self, MemberNumber):
@@ -253,19 +254,19 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         plt.yticks(range(y_m_min, y_m_max + 1, max(1, round((abs(y_m_max) + abs(y_m_min)) / 10))))
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.legend()
-        plt.title(f'Moment Diagram for Member {self.MemberNo}')
+        plt.title(f'First Order Moment Diagram for Member {self.MemberNo}')
         plt.show()
 
     def PlotGlobalBMD(self, scale_factor=0.5, show_structure=True):
 
         """
-        Plots bending moment diagrams with optional structure visualization
+        Plots bending moment diagram with optional structure visualization
         scale_factor: Controls the visual scaling of BMD magnitudes
         show_structure: If True, shows the structural elements
         """
 
         fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_title("Bending Moment Diagrams")
+        ax.set_title("First Order Bending Moment Diagram")
         
         if show_structure:
             computer_instance = Computer()
@@ -319,6 +320,103 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         ax.axis('equal')
         plt.show()
 
+    def PlotMemberSFD(self, MemberNumber):
+        
+        self.MemberNo = int(MemberNumber)
+        x_max = int(self.Members[self.MemberNo-1].length())
+        MemberSFD = self.MemberSFD(self.MemberNo)
+        y_m_max = int(max(MemberSFD) * 2)
+        y_m_min = int(min(MemberSFD) * 2)
+        
+        if y_m_max == 0:
+            y_m_max = 5
+        if y_m_min == 0:
+            y_m_min = -5
+        if y_m_max == y_m_min:
+            y_m_max = abs(y_m_max)
+            y_m_min = -abs(y_m_min)
+        
+        c = self.MemberAmplitude(self.MemberNo)
+        d = MemberSFD
+        g = [0, self.Members[self.MemberNo-1].length()]
+        h = [0, 0]
+        
+        plt.figure(figsize=(8, 5))
+        plt.plot(c, d, label="Shear Force", color='red', linewidth=1.5)
+        plt.plot(g, h, label="Baseline", color='black', linewidth=1.5, linestyle='dashed')
+        
+        plt.xlabel('Distance (Meter)')
+        plt.ylabel('Shear Force (kN)')
+        plt.xticks(range(0, x_max + 1, max(1, round(self.Members[self.MemberNo-1].length() / 10))))
+        plt.yticks(range(y_m_min, y_m_max + 1, max(1, round((abs(y_m_max) + abs(y_m_min)) / 10))))
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend()
+        plt.title(f'First Order Shear Force Diagram for Member {self.MemberNo}')
+        plt.show()
+
+    def PlotGlobalSFD(self, scale_factor=0.5, show_structure=True):
+
+        """
+        Plots Shear Force diagram with optional structure visualization
+        scale_factor: Controls the visual scaling of BMD magnitudes
+        show_structure: If True, shows the structural elements
+        """
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("First Order Shear Force Diagram")
+        
+        if show_structure:
+            computer_instance = Computer()
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+        
+        MemberForceLocalAll = self.MemberForceLocal(1, All=True)
+
+        # Determine global maximum absolute shear for scaling
+        max_abs_moment = max(max(abs(moment) for moment in member_forces) 
+                         for member_forces in MemberForceLocalAll)
+        
+        # Plot SFD for each member as simple lines
+        for member_idx, member in enumerate(self.Members):
+            # Get member properties
+            start = member.Start_Node
+            end = member.End_Node
+            L = member.length()
+            
+            # Get SFD values and positions
+            #positions = self.MemberAmplitude(member_idx+1)
+            Shears = self.MemberSFD(member_idx+1, MemberForceLocal=MemberForceLocalAll[member_idx])
+            positions = self.amplist
+            
+            # Calculate member orientation
+            dx = end.xcoordinate - start.xcoordinate
+            dy = end.ycoordinate - start.ycoordinate
+            angle = np.arctan2(dy, dx)
+            
+            # Create perpendicular direction vector
+            perp_dir = np.array([-np.sin(angle), np.cos(angle)])
+            
+            # Normalize moments and apply scaling
+            scaled_moments = [m * scale_factor / max_abs_moment if max_abs_moment != 0 else 0 
+                             for m in Shears]
+            
+            # Create points for SFD visualization
+            x_points = []
+            y_points = []
+            for pos, moment in zip(positions, scaled_moments):
+                # Calculate position along member
+                x_pos = start.xcoordinate + (dx * pos/L)
+                y_pos = start.ycoordinate + (dy * pos/L)
+                
+                # Offset by moment value in perpendicular direction
+                x_points.append(x_pos + perp_dir[0] * moment)
+                y_points.append(y_pos + perp_dir[1] * moment)
+            
+            # Plot SFD as simple black line
+            ax.plot(x_points, y_points, color='black', linewidth=1)
+
+        ax.axis('equal')
+        plt.show()
+
     def PlotMemberDeflection(self, MemberNumber):
         
         self.MemberNo = int(MemberNumber)
@@ -350,7 +448,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         plt.yticks(range(y_m_min, y_m_max + 1, max(1, round((abs(y_m_max) + abs(y_m_min)) / 10))))
         plt.grid(True, linestyle='--', alpha=0.7)
         plt.legend()
-        plt.title(f'Deflection of Member {self.MemberNo}')
+        plt.title(f'First Order Deflection of Member {self.MemberNo}')
         plt.show()
 
     def PlotGlobalDeflection(self, scale_factor = 1, show_structure=True):
@@ -362,7 +460,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         """
 
         fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_title("Deflection Diagrams")
+        ax.set_title("First Order Deflection Diagram")
         
         if show_structure:
             computer_instance = Computer()
@@ -372,18 +470,18 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(DisplacementList, self.UnConstrainedDoF, self.TotalDoF)
 
 
-        # Determine global maximum absolute moment for scaling
+        # Determine global maximum absolute deflection for scaling
         max_abs_deflection = max(DisplacementList)
         scale_factor = scale_factor / max_abs_deflection
         
-        # Plot BMD for each member as simple lines
+        # Plot Deflection for each member as simple lines
         for member_idx, member in enumerate(self.Members):
             # Get member properties
             start = member.Start_Node
             end = member.End_Node
             L = member.length()
             
-            # Get BMD values and positions
+            # Get Deflection values and positions
             deflections = self.MemberDeflection(member_idx+1, scale_factor, DisplacementDict = DisplacementDict)
             positions = self.DeflectionPosition
             
@@ -395,7 +493,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
             # Create perpendicular direction vector
             perp_dir = np.array([-np.sin(angle), np.cos(angle)])
             
-            # Create points for BMD visualization
+            # Create points for Deflection visualization
             x_points = []
             y_points = []
             for pos, deflection in zip(positions, deflections):

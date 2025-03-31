@@ -31,7 +31,7 @@ Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Young
 
 
 Loads = [
-NeumanBC(type="PL", Magnitude=10000, Distance1= 2.5, AssignedTo="Member 2", Members = Members)
+NeumanBC(type="PL", Magnitude=40000, Distance1= 2.5, AssignedTo="Member 2", Members = Members)
 ] 
 
 
@@ -54,25 +54,33 @@ DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loa
 
 Model1.PlotGlobalModel()
 
-MemberRes1.PlotMemberBMD(2)
-print(SecondOrderResponse1.BucklingEigenLoad()[0])
+#MemberRes1.PlotMemberBMD(2)
+#SecondOrderMemberResponse1.PlotMemberBMD(2)
+#MemberRes1.PlotGlobalSFD()
+#SecondOrderMemberResponse1.PlotGlobalSFD()
+#MemberRes1.PlotGlobalDeflection()
+#SecondOrderMemberResponse1.PlotMemberDeflection(1)
+print(SecondOrderResponse1.BucklingEigenLoad())
+#SecondOrderMemberResponse1.PlotGlobalDeflection()
+#Comparision1.PlotGlobalDeflectionComparison(scale_factor = 10)
+#print(SecondOrderResponse1.BucklingEigenLoad()[0])
 
-SecondOrderMemberResponse1.PlotMemberBMD(1)
-mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
+#SecondOrderMemberResponse1.PlotMemberBMD(1)
+#mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
 
 
 
-MemberRes1.PlotMemberBMD(1)
-MemberRes1.PlotGlobalBMD(show_structure=True)
-print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
-SecondOrderMemberResponse1.PlotMemberBMD(1)
-SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
-mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
+#MemberRes1.PlotMemberBMD(1)
+#MemberRes1.PlotGlobalBMD(show_structure=True)
+#print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
+#SecondOrderMemberResponse1.PlotMemberBMD(1)
+#SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
+#mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
 #print("MemNo",MemNo,SecondOrderMemberResponse1.MemberBMD(MemNo, mf[i]))
-Comparision1.PlotGlobalBMDComparison()
-MemberRes1.PlotGlobalDeflection()
-print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
-SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
+#Comparision1.PlotGlobalBMDComparison()
+#MemberRes1.PlotGlobalDeflection()
+#print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
+#SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
 
-print("EigenFrequency", DynamicResponse1.EigenFrequency())
-DynamicResponse1.PlotDynamicEigenMode()
+#print("EigenFrequency", DynamicResponse1.EigenFrequency())
+#DynamicResponse1.PlotDynamicEigenMode()
