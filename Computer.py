@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from scipy.sparse.linalg import eigsh, cg
 from scipy.linalg import eig
-from sksparse.cholmod import cholesky
+#from sksparse.cholmod import cholesky
 
 class Computer():
     """
