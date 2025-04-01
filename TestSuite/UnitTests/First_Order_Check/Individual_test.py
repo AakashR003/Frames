@@ -12,6 +12,7 @@ import numpy as np
 from config import config
 from main import Model
 from StructuralElements import Node, Member
+from Loads import NeumanBC
 
 # Test function for Member Stiffness Matrix( From NPTEL) in Global Coordinates 
 def test_MSMG(): #Member Stiffness Matrix Global Coordinate
@@ -98,8 +99,8 @@ def test_GSMA21(): #Global Stiffness Matrix - Structure
     Model1 = Model(Points = Points, Members = Members)
     print(Model1.GlobalStiffnessMatrixCondensedA21())
 
-""" 
-failing dont know why, have to check in future
+"""
+#failing dont know why, have to check in future
 def test_FV(): #Force Vector
     #To check Force Vector
     Points = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fixed Support"),

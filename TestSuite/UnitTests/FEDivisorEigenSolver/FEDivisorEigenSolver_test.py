@@ -24,8 +24,8 @@ def setup_model():
             ]
 
     LoadsT = [#NeumanBC(type="PL",Magnitude=5,Distance1=5,AssignedTo="Member 1", Members = Members),
-            NeumanBC(type="UDL",Magnitude=5,Distance1=0, Distance2 = 5, AssignedTo="Member 2", Members = MembersT),
-            NeumanBC(type="UDL",Magnitude=20,Distance1=0, Distance2 = 3, AssignedTo="Member 1", Members = MembersT),
+            NeumanBC(type="UDL",Magnitude=-5,Distance1=0, Distance2 = 5, AssignedTo="Member 2", Members = MembersT),
+            NeumanBC(type="UDL",Magnitude=-20,Distance1=0, Distance2 = 3, AssignedTo="Member 1", Members = MembersT),
             NeumanBC(type="PL",Magnitude=10,Distance1=1, AssignedTo="Member 3", Members = MembersT)
             ]
 
@@ -39,6 +39,6 @@ def test_FirstEigenLoad(setup_model):
     SecondOrderResponseT = setup_model
 
     EigenValueT = SecondOrderResponseT.BucklingEigenLoad()[0]
-    EigenValueR = 174.45
+    EigenValueR = 292.53
 
     assert np.allclose(EigenValueT, EigenValueR, atol=1), "Eigen value is wrong."

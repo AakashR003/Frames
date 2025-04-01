@@ -179,7 +179,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         abcd2 = (amp_values / length) * (-fem2 - fem1) + fem1
         
         # Combine fixed end moments and linear component
-        abcd3 = abcd1 + abcd2  # Total moment distribution
+        abcd3 = -abcd1 + abcd2  # Total moment distribution
         
         # Calculate shear force using vectorized difference
         step = length / (FEDivision - 1)
@@ -270,7 +270,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll = self.MemberForceLocal(1, All=True)
 
@@ -315,7 +315,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
                 y_points.append(y_pos + perp_dir[1] * moment)
             
             # Plot BMD as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth=1)
 
         ax.axis('equal')
         plt.show()
@@ -367,7 +367,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll = self.MemberForceLocal(1, All=True)
 
@@ -412,7 +412,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
                 y_points.append(y_pos + perp_dir[1] * moment)
             
             # Plot SFD as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth=1)
 
         ax.axis('equal')
         plt.show()
@@ -506,7 +506,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot BMD as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth = 2)
 
         ax.axis('equal')
         plt.show()

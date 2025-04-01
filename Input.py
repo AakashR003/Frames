@@ -31,14 +31,14 @@ Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Young
 
 
 Loads = [
-NeumanBC(type="PL", Magnitude=40000, Distance1= 2.5, AssignedTo="Member 2", Members = Members)
+NeumanBC(type="PL", Magnitude=-10000, Distance1= 2.5, AssignedTo="Member 1", Members = Members)
 ] 
 
 
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 10)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 1)
 
 
 #main Model part - Main mode part includes sub model part
@@ -60,18 +60,22 @@ Model1.PlotGlobalModel()
 #SecondOrderMemberResponse1.PlotGlobalSFD()
 #MemberRes1.PlotGlobalDeflection()
 #SecondOrderMemberResponse1.PlotMemberDeflection(1)
-print(SecondOrderResponse1.BucklingEigenLoad())
+#print(SecondOrderResponse1.BucklingEigenLoad())
 #SecondOrderMemberResponse1.PlotGlobalDeflection()
-#Comparision1.PlotGlobalDeflectionComparison(scale_factor = 10)
+#Comparision1.PlotGlobalDeflectionComparison(scale_factor = 1)
 #print(SecondOrderResponse1.BucklingEigenLoad()[0])
 
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)
 
+#print(Model1.ForceVector())
+#print(GlobalRes1.DisplacementVectorDict())
 
-
-#MemberRes1.PlotMemberBMD(1)
-#MemberRes1.PlotGlobalBMD(show_structure=True)
+#print(MemberRes1.MemberForceLocal(1,All = True))
+MemberRes1.PlotMemberBMD(1)
+MemberRes1.PlotGlobalBMD(show_structure=True)
+#MemberRes1.PlotGlobalDeflection()
+print(SecondOrderResponse1.BucklingEigenLoad())
 #print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)

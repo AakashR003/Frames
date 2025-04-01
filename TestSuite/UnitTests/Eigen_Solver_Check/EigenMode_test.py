@@ -32,7 +32,7 @@ def setup_model():
 
 
     LoadsT = [
-    NeumanBC(type="PL", Magnitude=10000, Distance1= 2.5, AssignedTo="Member 2", Members = MembersT)
+    NeumanBC(type="PL", Magnitude=-10000, Distance1= 2.5, AssignedTo="Member 2", Members = MembersT)
     ] 
 
 

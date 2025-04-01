@@ -1,0 +1,52 @@
+ SOFiSTiK AG - Educational-Version -
+ ASE    - ADVANCED SOLUTION ENGINE V 2025-3.0          4/01/25          Page:    
+ 
+ 
+ 
+    1 +PROG ASE
+    2 $ Dat : D:\...\pa_UnsymentricFrame with 3 load.dat  (#006)          01/04/2025
+    3 $ Job : AAKASH:002518                                                    01:51
+    4 CTRL WARN 498
+    5
+    6 HEAD LF7000: BUCKLING LF 1000
+    7 SYST PLC 1000 FACV 0.0 $ oder FAKV 1.0 falls Verformung des PLF mit berücksichtigt werden soll!
+    8 EIGE 10 BUCK LC 7000 $ Speichert die Beuleigenwerte in LF 7000-7005
+    9
+   10 END
+ 
+      SOFiSTiK AG - Educational-Version -
+      ASE    - ADVANCED SOLUTION ENGINE V 2025-3.0          4/01/25          Page: 213
+ 
+      
+      LF7000: Buckling LF 1000
+ 
+ 
+      Primary loadcase for eigenvalue analysis is loadcase 1000
+      with deformation factor  0.0000 (on undeformed system)
+      Element stiffnesses are calculated on the stress state of the primary loadcase
+ 
+      Parameter of System of Equations
+      Number of unknowns         654 DIRECT-SPARSE 
+      Total entries             2356
+      Total entries after fill in      3483
+      Mass matrix                            0  - 
+      Geometric matrix                    2046 (consistent)
+ 
+      Buckling Eigenvalues 
+      Using Vectoriteration
+      Iterationsvectors                      12
+       No    LC      Relativ   buckling
+                       error     factor
+        1  7000     7.95E-20     292.534
+        2  7001     8.23E-21     799.659
+        3  7002     1.59E-20     970.969
+        4  7003     1.25E-19    1621.589
+        5  7004     6.00E-16    2033.328
+        6  7005     1.60E-19    -549.473
+        7  7006     1.81E-21    -910.885
+        8  7007     2.72E-21   -1014.850
+        9  7008     2.67E-15   -2081.038
+       10  7009     1.46E-13   -2286.348
+       11           1.45E-10    3145.271
+       12           3.17E-10    3620.068
+ 

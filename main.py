@@ -176,52 +176,13 @@ class Model():
         """
         Plots the structural model using matplotlib.
         """
-        plt.figure(figsize=(10, 6))
+
+        fig, ax = plt.subplots(figsize=(10, 6))
         plt.title("Structural Model")
-
-        # Normalize sensitivities if provided
-        if sensitivities is not None:
-            min_sensitivity = min(sensitivities)
-            max_sensitivity = max(sensitivities)
-            # Avoid division by zero if all sensitivities are the same
-            if max_sensitivity == min_sensitivity:
-                normalized_sensitivities = [0.5 for _ in sensitivities]
-            else:
-                normalized_sensitivities = [(s - min_sensitivity) / (max_sensitivity - min_sensitivity) for s in sensitivities]
-
-        # Plot members
-        for i, member in enumerate(self.Members):
-            start_node = member.Start_Node
-            end_node = member.End_Node
-            if sensitivities is not None:
-                # Map normalized sensitivity to a color gradient (red to yellow)
-                color = plt.cm.OrRd(normalized_sensitivities[i])  # OrRd colormap: red to yellow
-                plt.plot([start_node.xcoordinate, end_node.xcoordinate], 
-                        [start_node.ycoordinate, end_node.ycoordinate], color=color, linewidth=2)
-            else:
-                plt.plot([start_node.xcoordinate, end_node.xcoordinate], 
-                        [start_node.ycoordinate, end_node.ycoordinate], 'b-')
-
-        # Plot nodes and support conditions
-        for i, node in enumerate(self.Points):
-            # Plot nodes
-            plt.plot(node.xcoordinate, node.ycoordinate, 'ro')
-            
-            # Add node numbers
-            plt.text(node.xcoordinate, node.ycoordinate + 0.2, f"{i+1}", fontsize=12, ha='center', va='bottom', color='black')
-
-            # Plot support conditions
-            if node.support_condition == 'Fixed Support':
-                plt.plot(node.xcoordinate, node.ycoordinate, 'ks', markersize=10, label="Fixed Support" if i == 0 else "")
-            elif node.support_condition == 'Hinged Support':
-                plt.plot(node.xcoordinate, node.ycoordinate, 'g^', markersize=10, label="Hinged Support" if i == 0 else "")
-            elif node.support_condition == 'Roller in X-plane':
-                plt.plot(node.xcoordinate, node.ycoordinate, 'bv', markersize=10, label="Roller in X-plane" if i == 0 else "")
-            elif node.support_condition == 'Roller in Y-plane':
-                plt.plot(node.xcoordinate, node.ycoordinate, 'r>', markersize=10, label="Roller in Y-plane" if i == 0 else "")
-            elif node.support_condition == 'Hinge Joint':
-                plt.plot(node.xcoordinate, node.ycoordinate, 'go', markerfacecolor='none', markersize=10, label="Hinged Support" if i == 0 else "")
-
+        
+        computer_instance = Computer()
+        computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = True)
+        
         # Find the maximum load magnitude across all loads (PL and UDL)
         max_load_magnitude = max(max(abs(load.Magnitude) for load in self.Loads), 1)  # Ensure at least 1 to avoid division by zero
 
@@ -232,12 +193,6 @@ class Model():
             elif load.type == "PL":
                 self._plot_point_load(load, max_load_magnitude)
             
-        # Add a colorbar if sensitivities are provided
-        if sensitivities is not None:
-            sm = plt.cm.ScalarMappable(cmap=plt.cm.OrRd, norm=plt.Normalize(vmin=min_sensitivity, vmax=max_sensitivity))
-            sm.set_array([])
-            cbar = plt.colorbar(sm, ax=plt.gca(), label="Sensitivity")  # Explicitly associate with the current Axes
-        
         # Add labels and legend
         plt.xlabel("X-coordinate")
         plt.ylabel("Y-coordinate")

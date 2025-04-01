@@ -23,7 +23,7 @@ def setup_model1():
         Member(Beam_Number=2, Start_Node=PointsT[1], End_Node=PointsT[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
     ] # square cross section - 0.3 x 0.3, units N, m
     LoadsT = [
-        NeumanBC(type="PL", Magnitude=100, Distance1=1, AssignedTo="Member 2", Members = MembersT)
+        NeumanBC(type="PL", Magnitude=-100, Distance1=1, AssignedTo="Member 2", Members = MembersT)
     ]
 
     ModelT = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)

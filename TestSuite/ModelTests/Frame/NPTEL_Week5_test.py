@@ -19,7 +19,7 @@ PointsT = [Node(Node_Number=1,xcoordinate=0,ycoordinate=0,Support_Condition="Fix
 MembersT = [Member(Beam_Number=1,Start_Node=PointsT[0],End_Node=PointsT[1],Area=12,Youngs_Modulus=29000,Moment_of_Inertia=600),
             Member(Beam_Number=2,Start_Node=PointsT[1],End_Node=PointsT[2],Area=12,Youngs_Modulus=29000,Moment_of_Inertia=600),]
 
-LoadsT = [NeumanBC(type="UDL",Magnitude=0.25,Distance1=0,Distance2=240,AssignedTo="Member 2", Members = MembersT), # converted 3ksi to 0.25 k/inch
+LoadsT = [NeumanBC(type="UDL",Magnitude=-0.25,Distance1=0,Distance2=240,AssignedTo="Member 2", Members = MembersT), # converted 3ksi to 0.25 k/inch
         ] 
 
 

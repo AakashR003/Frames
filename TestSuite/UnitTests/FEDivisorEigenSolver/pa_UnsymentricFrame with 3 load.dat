@@ -2,15 +2,16 @@
 +prog aqua urs:1
 head
 
+NORM DIN EN199X-200X UNIT 5
+
 echo full extr
 
 mate no 10 E 200000 titl "Created Steel'
-srec no 11 H 300 B 300 MNO 10
+srec no 10 H 300 B 300 MNO 10
 
 mate no 11 E 200000 titl "Created Steel'
-srec no 10 H 300 B 300 MNO 11
+srec no 11 H 300 B 300 MNO 11
 
-NORM DIN EN199X-200X UNIT 5
 
 stee no 1 type S clas 235 scm 1
 
@@ -37,7 +38,7 @@ SPT 1002 X 5 0 10 FIX PYMX
 SPT 1003 X 5 0 0 FIX ppmx
 
 
-SLN 1 GRP 3 SNO 10 DRX 0.000000 0.000000 -1.000000
+SLN 1 GRP 3 SNO 11 DRX 0.000000 0.000000 -1.000000
  SLNB X1 0 0 0  X2 0 0 5
 SLN 2 GRP 3 SNO 11 DRX 0.000000 0.000000 -1.000000
  SLNB X1 0 0 5  X2 5 0 10
@@ -50,11 +51,11 @@ end
 +PROG SOFILOAD urs:3
 head Describing Load condition
 
-let#load -5
+let#load 5
 lc 1 type none fact 1.00 facd 0.00 titl 'Fd'
-beam sln 2 type pzz pa #load pe #load a 0 l 5
-beam sln 1 type pzz pa -20 pe -20 a 0 l 3
-BEPL SLN 3 TYPE PZz P -10 A 1
+beam sln 2 type pz pa #load pe #load a 0 l 5
+beam sln 1 type pz pa 20 pe 20 a 0 l 3
+BEPL SLN 3 TYPE PZ P 10 A 1
 
 end
 
@@ -82,10 +83,11 @@ end
 
 
 +PROG ASE urs:4
+CTRL WARN 498
 
 HEAD LF7000: Buckling LF 1000
 SYST PLC 1000 FACV 0.0 $ oder FAKV 1.0 falls Verformung des PLF mit berücksichtigt werden soll!
-EIGE 1 BUCK LC 7000 $ Speichert die Beuleigenwerte in LF 7000-7005
+EIGE 10 BUCK LC 7000 $ Speichert die Beuleigenwerte in LF 7000-7005
 
 END
 

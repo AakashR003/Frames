@@ -111,7 +111,7 @@ class DynamicGlobalResponse(Model):
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth = 2)
 
         ax.axis('equal')
         plt.show()

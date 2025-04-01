@@ -103,15 +103,14 @@ class Computer():
             raise ValueError("Conversion to global is not allowed in this Function.")
 
         MemberNo = int(MemberNumber)
+        MemberDisplacementLocal = np.dot((Members[MemberNo-1].Transformation_Matrix()), MemberDisplacement)
         MemberForce = np.dot(
-                    np.dot(
-                    getattr(Members[MemberNo-1],StiffnessMatrixType)(NormalForce),Members[MemberNo-1].Transformation_Matrix()),
-                    MemberDisplacement)
+                    getattr(Members[MemberNo-1],StiffnessMatrixType)(NormalForce),
+                    MemberDisplacementLocal)
         FixedendForce = [0, 0, 0, 0, 0, 0]
         for a in range(len(Loads)):
             if(int(Loads[a].AssignedTo.split()[1]) == MemberNo):
-                FixedendForcei = list(Loads[a].EquivalentLoad().values())[:-1]
-                FixedendForcei= [x[0] for x in FixedendForcei]
+                FixedendForcei = Loads[a].EquivalentLoad(ReturnLocal = True)
                 FixedendForce = [x + y for x, y in zip(FixedendForce, FixedendForcei)]
         MemberForce = np.round(MemberForce - FixedendForce,2)
 
@@ -229,24 +228,26 @@ class Computer():
                 color = plt.cm.OrRd(normalized_sensitivity)
                 ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
                         [start_node.ycoordinate, end_node.ycoordinate], 
-                        color=color, linewidth=2)
+                        color=color, linewidth = 2)
             else:
                 ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
-                       [start_node.ycoordinate, end_node.ycoordinate], 'b-')
+                       [start_node.ycoordinate, end_node.ycoordinate], 'b-',
+                       linewidth = 2)
 
         # Plot nodes and support conditions
         for i, node in enumerate(Points):
             # Plot nodes
-            ax.plot(node.xcoordinate, node.ycoordinate, 'ro')
+            ax.plot(node.xcoordinate, node.ycoordinate, 'o', color='violet',  markersize = 4)
+            ax.set_facecolor('black')
             
             # Add node numbers
-            if ShowNodeNumber:
+            if ShowNodeNumber == True:
                 ax.text(node.xcoordinate, node.ycoordinate + 0.2, f"{i+1}", 
-                   fontsize=12, ha='center', va='bottom', color='black')
+                   fontsize=12, ha='center', va='bottom', color='violet')
 
             # Plot support conditions
             if node.support_condition == 'Fixed Support':
-                ax.plot(node.xcoordinate, node.ycoordinate, 'ks', 
+                ax.plot(node.xcoordinate, node.ycoordinate, 'gs', 
                        markersize=10, label="Fixed Support" if i == 0 else "")
             elif node.support_condition == 'Hinged Support':
                 ax.plot(node.xcoordinate, node.ycoordinate, 'g^', 
