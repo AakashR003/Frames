@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig
+from scipy.sparse.linalg import eigsh
 #import importlib
 import math
 import scipy.sparse as sp
@@ -122,17 +123,38 @@ class SecondOrderGlobalResponse(Model):
         
         return SupportForces
     
-    def BucklingEigenLoad(self, EigenModeNo = False):
+    def BucklingEigenLoad(self, Solver = False):
 
         gr_buck = self.UnConstrainedDoF()
 
-        print("NNNNNNFFFFFF",self.NormalForce())
         BGSMConden = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
         BGSMM_1st_Ord_condensed = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         
         CriticalLoad , EigenMode = eig(BGSMM_1st_Ord_condensed,BGSMConden)
-        if EigenModeNo:
-            x ,EigenMode = eigs(csc_matrix(BGSMM_1st_Ord_condensed), M = csc_matrix(BGSMConden), k = 10, which='SM')
+
+        if Solver == "eigs":
+            x, EigenMode = eigs(
+                                BGSMM_1st_Ord_condensed, 
+                                M=BGSMConden, 
+                                k=10, 
+                                which='SM', 
+                                maxiter=10000,    # Increase iterations
+                                tol=1e-6,         # Loosen tolerance
+                                ncv=50            # More Lanczos vectors
+                                )
+        
+        if Solver == "eigsh":
+            x, EigenMode = eigsh(
+                                    BGSMM_1st_Ord_condensed, 
+                                    M=BGSMConden, 
+                                    k=10, 
+                                    sigma=1e-6,       # Shift near zero (critical for stability)
+                                    which='LM',       # Largest magnitude after shift-invert
+                                    mode='buckling',  # For buckling problems (A x = λ M x)
+                                    maxiter=10000,
+                                    tol=1e-6,
+                                    ncv=50
+                                )
         
         CriticalLoad = sorted(CriticalLoad, key=lambda x: abs(x))
         CriticalLoad = [round(float(x.real), 2) for x in CriticalLoad]
@@ -157,7 +179,7 @@ class SecondOrderGlobalResponse(Model):
         
         return BeamEigenVector
 
-    def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, show_structure = True):
+    def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, Solver ="eigsh", show_structure = True):
         fig, ax = plt.subplots(figsize=(12, 8))
         ax.set_title("Eigen Mode")
         
@@ -165,7 +187,7 @@ class SecondOrderGlobalResponse(Model):
             computer_instance = Computer()
             computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
 
-        Eigen = self.BucklingEigenLoad(EigenModeNo = EigenModeNo)
+        Eigen = self.BucklingEigenLoad(Solver = Solver)
         print("Eigen Load", Eigen[0], Eigen[1])
         EigenVector = Eigen[2][:,(EigenModeNo-1)]
         EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
