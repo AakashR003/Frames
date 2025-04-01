@@ -74,7 +74,7 @@ class SecondOrderGlobalResponse(Model):
         NoMem = len(self.Members)
 
         #1st iteration
-        FirstOderDisplacement = Computer.CholeskyDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
         NorForList =[]
         for i in range(NoMem):
@@ -85,7 +85,7 @@ class SecondOrderGlobalResponse(Model):
         #2nd iteration
         for j in range(0,iteration_steps):
 
-            SecondOrderDisplacement = Computer.CholeskyDisplacementSolver(self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList),self.ForceVector())
+            SecondOrderDisplacement = Computer.DirectInverseDisplacementSolver(self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList),self.ForceVector())
             DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
             
             NorForList1 = NorForList
