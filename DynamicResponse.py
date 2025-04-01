@@ -123,7 +123,7 @@ class DynamicGlobalResponse(Model):
             # Plot as simple black line
             ax.plot(x_points, y_points, color='red', linewidth = 2)
 
-        ax.set_title(f"Dynamic Eigen Mode {EigenModeNo} - {Eigen[1][EigenModeNo-1]}")
+        ax.set_title(f"Dynamic Eigen Mode {EigenModeNo} - {Eigen[1][EigenModeNo-1]}Hz")
         ax.axis('equal')
         plt.show()
 
