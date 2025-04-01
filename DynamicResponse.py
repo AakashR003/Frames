@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig
+from scipy.sparse.linalg import eigsh
 #import importlib
 import math
 import scipy.sparse as sp
@@ -34,7 +35,17 @@ class DynamicGlobalResponse(Model):
         
         EigenFreq , EigenMode = eig(_1st_OrdSM_condensed, MM_Conden)
         if EigenModeNo:
-            x , EigenMode = eigs(csc_matrix(_1st_OrdSM_condensed), M = csc_matrix(MM_Conden), k = 10, which='SM')
+            x, EigenMode = eigsh(
+                                    _1st_OrdSM_condensed, 
+                                    M=MM_Conden, 
+                                    k=10, 
+                                    sigma=1e-6,       # Shift near zero (critical for stability)
+                                    which='LM',       # Largest magnitude after shift-invert
+                                    mode='buckling',  # For buckling problems (A x = λ M x)
+                                    maxiter=10000,
+                                    tol=1e-6,
+                                    ncv=50
+                                )
         
         EigenFreq = sorted(EigenFreq, key=lambda x: abs(x)) # answer will be in radians - converting to Hz 
         EigenFreq = [round(float(x.real)**0.5/(2*np.pi), 2) for x in EigenFreq]
@@ -60,17 +71,17 @@ class DynamicGlobalResponse(Model):
         return BeamEigenVector
 
 
-    def PlotDynamicEigenMode(self, EigenModeNo = -1, scale_factor = 1, show_structure = True):
+    def PlotDynamicEigenMode(self, EigenModeNo = 1, scale_factor = 1, show_structure = True):
 
         fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_title("Dynamic Eigen Mode")
+        
         
         if show_structure:
             computer_instance = Computer()
             computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
 
         Eigen = self.EigenFrequency(EigenModeNo = EigenModeNo)
-        print("Eigen Load", Eigen[0], Eigen[1])
+        print("Eigen Frequency", Eigen[0], Eigen[1])
         EigenVector = Eigen[2][:,(EigenModeNo-1)]
         EigenVectorDict = Computer.ModelDisplacementList_To_Dict(EigenVector, self.UnConstrainedDoF, self.TotalDoF)
         
@@ -112,6 +123,7 @@ class DynamicGlobalResponse(Model):
             # Plot as simple black line
             ax.plot(x_points, y_points, color='red', linewidth = 2)
 
+        ax.set_title(f"Dynamic Eigen Mode {EigenModeNo} - {Eigen[1][EigenModeNo-1]}")
         ax.axis('equal')
         plt.show()
 

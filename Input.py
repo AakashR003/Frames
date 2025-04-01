@@ -88,4 +88,4 @@ MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
 
 #print("EigenFrequency", DynamicResponse1.EigenFrequency())
-#DynamicResponse1.PlotDynamicEigenMode()
+DynamicResponse1.PlotDynamicEigenMode(2)
