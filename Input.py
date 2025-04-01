@@ -38,7 +38,7 @@ NeumanBC(type="PL", Magnitude=-10000, Distance1= 2.5, AssignedTo="Member 1", Mem
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 1)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 20)
 
 
 #main Model part - Main mode part includes sub model part
@@ -76,6 +76,8 @@ MemberRes1.PlotMemberBMD(1)
 MemberRes1.PlotGlobalBMD(show_structure=True)
 #MemberRes1.PlotGlobalDeflection()
 print(SecondOrderResponse1.BucklingEigenLoad())
+SecondOrderResponse1.PlotEigenMode(EigenModeNo = 3, Solver="eigsh", scale_factor = 1)
+MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.SecondOrderDisplacementVector(10))
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
@@ -84,7 +86,6 @@ print(SecondOrderResponse1.BucklingEigenLoad())
 #Comparision1.PlotGlobalBMDComparison()
 #MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
-#SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, scale_factor = 0.3)
 
 #print("EigenFrequency", DynamicResponse1.EigenFrequency())
 #DynamicResponse1.PlotDynamicEigenMode()
