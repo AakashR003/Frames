@@ -1,3 +1,4 @@
+import numpy as np
 
 try:
     from config import config
@@ -16,7 +17,7 @@ class NeumanBC():
         
         self.MemberNo = int(self.AssignedTo.split()[1])-1
     
-    def EquivalentLoad(self):
+    def EquivalentLoad(self, ReturnLocal = False):
         
         FEDivision = config.get_FEDivision()
         self.frml=[] # Free moment Distribution(Simply supported) along beam 
@@ -69,22 +70,22 @@ class NeumanBC():
         else:
             raise ValueError(f"Unsupported load type: '{self.type}'")
         
-        self.mfab=((2*(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3)
-        self.mfba=-(2*(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3
+        self.mfab=-((2*(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3)
+        self.mfba=(2*(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3
 
+        self.V_b=-(-self.mfab-self.mfba+vb*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
+        self.V_a=-(self.mfab+self.mfba+va*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
         
-        if(self.Members[self.MemberNo].alpha()>=0):
-            self.V_b=(-self.mfab-self.mfba+vb*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
-            self.V_a=(self.mfab+self.mfba+va*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
-        else:
-            self.V_b=-(-self.mfab-self.mfba+vb*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
-            self.V_a=-(self.mfab+self.mfba+va*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
+        LocalFixedEndForce = [0, self.V_a, self.mfab, 0, self.V_b, self.mfba]
+        GlobalFixedEndForce = np.dot(np.transpose(self.Members[self.MemberNo].Transformation_Matrix()), LocalFixedEndForce) 
+
+        if ReturnLocal == True:
+            return LocalFixedEndForce
         
-        
-        return {"Ha":(0,self.Members[self.MemberNo].DoFNumber()[0]),
-                "Va":(self.V_a,self.Members[self.MemberNo].DoFNumber()[1]),
-                "Ma":(self.mfab,self.Members[self.MemberNo].DoFNumber()[2]),
-                "Hb":(0,self.Members[self.MemberNo].DoFNumber()[3]),
-                "Vb":(self.V_b,self.Members[self.MemberNo].DoFNumber()[4]),
-                "Mb":(self.mfba,self.Members[self.MemberNo].DoFNumber()[5]),
+        return {"Ha":(GlobalFixedEndForce[0],self.Members[self.MemberNo].DoFNumber()[0]),
+                "Va":(GlobalFixedEndForce[1],self.Members[self.MemberNo].DoFNumber()[1]),
+                "Ma":(GlobalFixedEndForce[2],self.Members[self.MemberNo].DoFNumber()[2]),
+                "Hb":(GlobalFixedEndForce[3],self.Members[self.MemberNo].DoFNumber()[3]),
+                "Vb":(GlobalFixedEndForce[4],self.Members[self.MemberNo].DoFNumber()[4]),
+                "Mb":(GlobalFixedEndForce[5],self.Members[self.MemberNo].DoFNumber()[5]),
                 "FreeMoment": self.frml}#[self.V_a,self.mfab,self.V_b,self.mfba]

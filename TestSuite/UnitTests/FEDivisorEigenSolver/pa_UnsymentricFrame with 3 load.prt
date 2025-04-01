@@ -1,0 +1,92 @@
+   *** Start: Program Calculation - Version 2025-3.0.565
+   *** Start: Program aqua
+   
+   SOFiSTiK 2025-3.0.565    AQUA   - GENERAL SECTIONS
+   Output on file pa_UnsymentricFrame with 3 load.plb
+   Project data base pa_UnsymentricFrame with 3 load.cdb -    36. access
+   +++++ warning no. 12155 ; input line:   17
+   The item SCM @STEE is an obsolete input option. Please note, that future
+   SOFiSTiK major releases will no longer support this option.
+   Please check the manual for alternative input possibilities.
+   Please be aware, that the obsoleted item may have been shifted to a different position in the record
+   TIME NEEDED         1, TOTAL         1
+   DATE       2025-04-01, 01:51:25
+   
+   
+   
+    +++++    0 errors and    1 warnings +++++
+   *** Stop : Program aqua
+   *** Start: Program sofimshc
+   
+   SOFiSTiK 2025-3.0.565    SOFIMSHC - GEOMETRY + STRUCT
+   Output on file pa_UnsymentricFrame with 3 load.plb
+   Project data base pa_UnsymentricFrame with 3 load.cdb -    37. access
+   Analysis and decomposition of structural model:
+   CPU-time [s]:    0.00,   geom. tolerance [m]:   0.010
+   TIME NEEDED         0, TOTAL         0
+   DATE       2025-04-01, 01:51:25
+   *** Stop : Program sofimshc
+   *** Start: Program sofiload
+   
+   SOFiSTiK 2025-3.0.565    SOFILOAD - LOAD GENERATOR
+   Output on file pa_UnsymentricFrame with 3 load.plb
+   Project data base pa_UnsymentricFrame with 3 load.cdb -    38. access
+   TIME NEEDED         0, TOTAL         0
+   TIME NEEDED         0, TOTAL         0
+   DATE       2025-04-01, 01:51:26
+   *** Stop : Program sofiload
+   *** Start: Program ase
+   
+   SOFiSTiK 2025-3.0.565    ASE   - ADVANCED SOLUTION ENGINE
+   Output on file pa_UnsymentricFrame with 3 load.plb
+   Project data base pa_UnsymentricFrame with 3 load.cdb -    39. access
+   load case  1000
+   
+   Parameter of System of Equation   3
+   (Sparse Direct Solver)
+   Number of unknowns              654
+   Total entries                  2356
+   Total entries after fill       3483
+   TIME NEEDED         0, TOTAL         0
+   TIME NEEDED         0, TOTAL         0
+   DATE       2025-04-01, 01:51:26
+   *** Stop : Program ase
+   *** Start: Program ase
+   
+   SOFiSTiK 2025-3.0.565    ASE   - ADVANCED SOLUTION ENGINE
+   Output on file pa_UnsymentricFrame with 3 load.plb
+   Project data base pa_UnsymentricFrame with 3 load.cdb -    40. access
+   load case  1001
+   
+   Parameter of System of Equation   3
+   (Sparse Direct Solver)
+   Number of unknowns              654
+   Total entries                  2356
+   Total entries after fill       3483
+   Fast serial element analysis and postprocessing
+       108  beam elements (of    110 beam elements)
+   Iteration  1 Residual        1.000  energy 1.000 e/f  0.000  1.000
+   Update nonlinear stiffness
+   
+   Parameter of System of Equation   3
+   (Sparse Direct Solver)
+   Number of unknowns              654
+   Total entries                  2364
+   Total entries after fill       3491
+   Iteration  2 Residual        0.000  energy 0.999 e/f  0.000  1.000
+   TIME NEEDED         0, TOTAL         0
+   TIME NEEDED         0, TOTAL         0
+   DATE       2025-04-01, 01:51:26
+   *** Stop : Program ase
+   *** Start: Program ase
+   
+   SOFiSTiK 2025-3.0.565    ASE   - ADVANCED SOLUTION ENGINE
+   Output on file pa_UnsymentricFrame with 3 load.plb
+   Project data base pa_UnsymentricFrame with 3 load.cdb -    41. access
+   Fast serial element analysis and postprocessing
+       110  beam elements (of    110 beam elements)
+   TIME NEEDED         0, TOTAL         0
+   TIME NEEDED         0, TOTAL         0
+   DATE       2025-04-01, 01:51:27
+   *** Stop : Program ase
+   *** End of Calculation!

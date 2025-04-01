@@ -27,8 +27,8 @@ def setup_model():
         Member(Beam_Number=2, Start_Node=PointsT[1], End_Node=PointsT[2], Area=1, Youngs_Modulus=1, Moment_of_Inertia=1),
     ]
     LoadsT = [
-        NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=10, AssignedTo="Member 1", Members = MembersT),
-        NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=10, AssignedTo="Member 2", Members = MembersT)
+        NeumanBC(type="UDL", Magnitude=-5, Distance1=0, Distance2=10, AssignedTo="Member 1", Members = MembersT),
+        NeumanBC(type="UDL", Magnitude=-5, Distance1=0, Distance2=10, AssignedTo="Member 2", Members = MembersT)
     ]
     Model1 = Model(Points=PointsT, Members=MembersT, Loads=LoadsT)
     Res = FirstOrderGlobalResponse(Points=PointsT, Members=MembersT, Loads=LoadsT)

@@ -28,7 +28,7 @@ def setup_model():
 
 
     LoadsT = [
-    NeumanBC(type="PL", Magnitude=10000, Distance1= 2.5, AssignedTo="Member 1", Members = MembersT)
+    NeumanBC(type="PL", Magnitude=-10000, Distance1= 2.5, AssignedTo="Member 1", Members = MembersT)
     ] 
 
     PointsT, MembersT, LoadsT = divide_into_finite_elements(PointsT, MembersT, LoadsT, 10)

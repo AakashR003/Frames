@@ -38,11 +38,11 @@ def setup_model():
         Member(Beam_Number=10, Start_Node=PointsT[9], End_Node=PointsT[10], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675)
     ] # square cross section - 0.3 x 0.3, units N, m
     LoadsT = [
-        NeumanBC(type="UDL", Magnitude=100, Distance1=0, Distance2=1, AssignedTo="Member 6", Members = MembersT),
-        NeumanBC(type="UDL", Magnitude=100, Distance1=0, Distance2=1, AssignedTo="Member 7", Members = MembersT),
-        NeumanBC(type="UDL", Magnitude=100, Distance1=0, Distance2=1, AssignedTo="Member 8", Members = MembersT),
-        NeumanBC(type="UDL", Magnitude=100, Distance1=0, Distance2=1, AssignedTo="Member 9", Members = MembersT),
-        NeumanBC(type="UDL", Magnitude=100, Distance1=0, Distance2=1, AssignedTo="Member 10", Members = MembersT),
+        NeumanBC(type="UDL", Magnitude=-100, Distance1=0, Distance2=1, AssignedTo="Member 6", Members = MembersT),
+        NeumanBC(type="UDL", Magnitude=-100, Distance1=0, Distance2=1, AssignedTo="Member 7", Members = MembersT),
+        NeumanBC(type="UDL", Magnitude=-100, Distance1=0, Distance2=1, AssignedTo="Member 8", Members = MembersT),
+        NeumanBC(type="UDL", Magnitude=-100, Distance1=0, Distance2=1, AssignedTo="Member 9", Members = MembersT),
+        NeumanBC(type="UDL", Magnitude=-100, Distance1=0, Distance2=1, AssignedTo="Member 10", Members = MembersT),
         #NeumanBC(type="PL", Magnitude=100, Distance1=1, AssignedTo="Member 4", Members = Members)
     ]
 

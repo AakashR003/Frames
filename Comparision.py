@@ -26,7 +26,7 @@ class Comparision():
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.MainModel.Members, self.MainModel.Points)
+            computer_instance.PlotStructuralElements(ax,self.MainModel.Members, self.MainModel.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll1 = self.MainModel.MemberForceLocal(1, All=True)
         MemberForceLocalAll2 = self.Model2.MemberForceLocal(1, All=True)
@@ -127,7 +127,7 @@ class Comparision():
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.MainModel.Members, self.MainModel.Points)
+            computer_instance.PlotStructuralElements(ax,self.MainModel.Members, self.MainModel.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll1 = self.MainModel.MemberForceLocal(1, All=True)
         MemberForceLocalAll2 = self.Model2.MemberForceLocal(1, All=True)
@@ -150,7 +150,7 @@ class Comparision():
             
             # Get BMD values and positions
             #positions = self.MemberAmplitude(member_idx+1)
-            moments = self.MainModel.MemberBMD(member_idx+1, MemberForceLocal=MemberForceLocalAll1[member_idx])
+            moments = self.MainModel.MemberSFD(member_idx+1, MemberForceLocal=MemberForceLocalAll1[member_idx])
             positions = self.MainModel.amplist
             
             # Calculate member orientation
@@ -189,7 +189,7 @@ class Comparision():
             
             # Get BMD values and positions
             #positions = self.MemberAmplitude(member_idx+1)
-            moments = self.Model2.MemberBMD(member_idx+1, MemberForceLocal=MemberForceLocalAll2[member_idx])
+            moments = self.Model2.MemberSFD(member_idx+1, MemberForceLocal=MemberForceLocalAll2[member_idx])
             positions = self.Model2.amplist
             
             # Calculate member orientation
@@ -228,7 +228,7 @@ class Comparision():
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.MainModel.Members, self.MainModel.Points)
+            computer_instance.PlotStructuralElements(ax,self.MainModel.Members, self.MainModel.Points, ShowNodeNumber = False)
 
         DisplacementList1 = self.MainModel.DisplacementVector()
         DisplacementDict1 = Computer.ModelDisplacementList_To_Dict(DisplacementList1, self.MainModel.UnConstrainedDoF, self.MainModel.TotalDoF)
@@ -278,7 +278,7 @@ class Comparision():
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot BMD as simple black line
-            ax.plot(x_points, y_points, color='green', linewidth=1)
+            ax.plot(x_points, y_points, color='green', linewidth = 2)
         
 
         for member_idx, member in enumerate(self.Model2.Members):
@@ -313,7 +313,7 @@ class Comparision():
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot BMD as simple black line
-            ax.plot(x_points, y_points, color='red', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth = 2)
 
         ax.axis('equal')
         plt.show()

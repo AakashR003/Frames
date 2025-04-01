@@ -126,6 +126,7 @@ class SecondOrderGlobalResponse(Model):
 
         gr_buck = self.UnConstrainedDoF()
 
+        print("NNNNNNFFFFFF",self.NormalForce())
         BGSMConden = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"Second_Order_Global_Reduction_Matrix_1", NormalForce = self.NormalForce())
         BGSMM_1st_Ord_condensed = Computer.StiffnessMatrixAssembler(gr_buck,self.Members,"First_Order_Global_Stiffness_Matrix_1")
         
@@ -205,7 +206,7 @@ class SecondOrderGlobalResponse(Model):
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth = 2)
 
         ax.axis('equal')
         plt.show()
@@ -449,7 +450,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
                 y_points.append(y_pos + perp_dir[1] * moment)
             
             # Plot BMD as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth=1)
 
         ax.axis('equal')
         plt.show()
@@ -501,7 +502,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
         
         if show_structure:
             computer_instance = Computer()
-            computer_instance.PlotStructuralElements(ax,self.Members, self.Points)
+            computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         MemberForceLocalAll = self.MemberForceLocal(1, All=True)
 
@@ -546,7 +547,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
                 y_points.append(y_pos + perp_dir[1] * moment)
             
             # Plot SFD as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth=1)
 
         ax.axis('equal')
         plt.show()
@@ -641,7 +642,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
                 y_points.append(y_pos + perp_dir[1] * deflection)
             
             # Plot BMD as simple black line
-            ax.plot(x_points, y_points, color='black', linewidth=1)
+            ax.plot(x_points, y_points, color='red', linewidth = 2)
 
         ax.axis('equal')
         plt.show()

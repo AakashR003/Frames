@@ -49,10 +49,10 @@ Members = [
 
 # Loads for Howe Truss
 Loads = [
-    NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=5, AssignedTo="Member 1", Members=Members),
-    NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=5, AssignedTo="Member 2", Members=Members),
-    NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=5, AssignedTo="Member 3", Members=Members),
-    NeumanBC(type="UDL", Magnitude=5, Distance1=0, Distance2=5, AssignedTo="Member 4", Members=Members),
+    NeumanBC(type="UDL", Magnitude=-5, Distance1=0, Distance2=5, AssignedTo="Member 1", Members=Members),
+    NeumanBC(type="UDL", Magnitude=-5, Distance1=0, Distance2=5, AssignedTo="Member 2", Members=Members),
+    NeumanBC(type="UDL", Magnitude=-5, Distance1=0, Distance2=5, AssignedTo="Member 3", Members=Members),
+    NeumanBC(type="UDL", Magnitude=-5, Distance1=0, Distance2=5, AssignedTo="Member 4", Members=Members),
 ]
 
 Model1 = Model(Points = Points, Members = Members, Loads = Loads)
