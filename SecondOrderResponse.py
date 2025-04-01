@@ -180,7 +180,7 @@ class SecondOrderGlobalResponse(Model):
 
     def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, Solver ="eigsh", show_structure = True):
         fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_title("Eigen Mode")
+
         
         if show_structure:
             computer_instance = Computer()
@@ -229,6 +229,7 @@ class SecondOrderGlobalResponse(Model):
             # Plot as simple black line
             ax.plot(x_points, y_points, color='red', linewidth = 2)
 
+        ax.set_title(f"Eigen Mode {EigenModeNo} - {Eigen[1][EigenModeNo-1]}")
         ax.axis('equal')
         plt.show()
 
