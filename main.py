@@ -203,73 +203,72 @@ class Model():
 
     def _plot_point_load(self, load, max_load_magnitude):
         """
-        Plots a Point Load on the assigned member.
-        :param load: NeumanBC object representing the Point Load.
-        :param max_load_magnitude: Maximum load magnitude for scaling.
+        Plots a Point Load on the assigned member in its local coordinate system.
+        Positive loads act upward in the local y’ direction.
         """
-        # Extract the member number from the AssignedTo attribute (e.g., "Member 1" -> 1)
-        member_number = int(load.AssignedTo.split()[1]) - 1  # Convert to zero-based index
+        member_number = int(load.AssignedTo.split()[1]) - 1
         if member_number < 0 or member_number >= len(self.Members):
             raise ValueError(f"Invalid member number {member_number + 1} for load: {load}")
 
-        # Get the assigned member
         member = self.Members[member_number]
         start_node = member.Start_Node
         end_node = member.End_Node
 
-        # Calculate the position of the Point Load
+        # Calculate member direction and orientation
         dx = end_node.xcoordinate - start_node.xcoordinate
         dy = end_node.ycoordinate - start_node.ycoordinate
         length = np.sqrt(dx**2 + dy**2)
+        theta = np.arctan2(dy, dx)  # Angle of member relative to global x-axis
+
+        # Position of the load along the member
         x = start_node.xcoordinate + (load.Distance1 / length) * dx
         y = start_node.ycoordinate + (load.Distance1 / length) * dy
 
-        # Scale the arrow length based on the load magnitude
-        arrow_length = 0.5 * (abs(load.Magnitude) / max_load_magnitude)  # Scale the arrow length
+        # Arrow direction in LOCAL y’ coordinates
+        arrow_length = 0.5 * (abs(load.Magnitude) / max_load_magnitude)
+        direction_sign = 1 if load.Magnitude > 0 else -1
+        dx_arrow = -np.sin(theta) * direction_sign * arrow_length  # Local y’ x-component
+        dy_arrow = np.cos(theta) * direction_sign * arrow_length  # Local y’ y-component
 
-        # Plot the Point Load as an arrow on top of the beam
-        arrow_dy = -arrow_length if load.Magnitude > 0 else arrow_length  # Arrow direction based on load sign
-        plt.arrow(x, y, 0, arrow_dy, head_width=0.2, head_length=0.2, fc='r', ec='r')
+        # Plot arrow in local direction
+        plt.arrow(x, y, dx_arrow, dy_arrow, head_width=0.2, head_length=0.2, fc='r', ec='r')
 
     def _plot_udl(self, load, max_load_magnitude):
         """
-        Plots a Uniformly Distributed Load (UDL) on the assigned member.
-        :param load: NeumanBC object representing the UDL.
-        :param max_load_magnitude: Maximum load magnitude for scaling.
+        Plots a UDL on the assigned member in its local coordinate system.
+        Positive loads act upward in the local y’ direction.
         """
-        # Extract the member number from the AssignedTo attribute (e.g., "Member 2" -> 2)
-        member_number = int(load.AssignedTo.split()[1]) - 1  # Convert to zero-based index
+        member_number = int(load.AssignedTo.split()[1]) - 1
         if member_number < 0 or member_number >= len(self.Members):
             raise ValueError(f"Invalid member number {member_number + 1} for load: {load}")
 
-        # Get the assigned member
         member = self.Members[member_number]
         start_node = member.Start_Node
         end_node = member.End_Node
 
-        # Calculate the direction of the member
         dx = end_node.xcoordinate - start_node.xcoordinate
         dy = end_node.ycoordinate - start_node.ycoordinate
         length = np.sqrt(dx**2 + dy**2)
-        angle = np.arctan2(dy, dx)
+        theta = np.arctan2(dy, dx)  # Angle of member relative to global x-axis
 
-        # Calculate the start and end points of the UDL
+        # Start/end points of UDL segment
         x1 = start_node.xcoordinate + (load.Distance1 / length) * dx
         y1 = start_node.ycoordinate + (load.Distance1 / length) * dy
         x2 = start_node.xcoordinate + (load.Distance2 / length) * dx
         y2 = start_node.ycoordinate + (load.Distance2 / length) * dy
 
-        # Scale the arrow length based on the load magnitude
-        arrow_length = 0.2 * (abs(load.Magnitude) / max_load_magnitude)  # Scale the arrow length
+        # Arrow direction in LOCAL y’ coordinates
+        arrow_length = 0.2 * (abs(load.Magnitude) / max_load_magnitude)
+        direction_sign = 1 if load.Magnitude > 0 else -1
+        dx_arrow = -np.sin(theta) * direction_sign * arrow_length  # Local y’ x-component
+        dy_arrow = np.cos(theta) * direction_sign * arrow_length  # Local y’ y-component
 
-        # Plot the UDL as a series of arrows on top of the beam
-        num_arrows = 15  # Number of arrows to represent the UDL
+        # Plot UDL as arrows along the member
+        num_arrows = 15
         for i in range(num_arrows):
             xi = x1 + (x2 - x1) * (i / num_arrows)
             yi = y1 + (y2 - y1) * (i / num_arrows)
-            # Adjust the arrow position to be on top of the beam
-            arrow_dy = -arrow_length if load.Magnitude > 0 else arrow_length  # Arrow direction based on load sign
-            plt.arrow(xi, yi, 0, arrow_dy, head_width=0.1, head_length=0.1, fc='g', ec='g')
+            plt.arrow(xi, yi, dx_arrow, dy_arrow, head_width=0.1, head_length=0.1, fc='g', ec='g')
 
 
 

@@ -31,7 +31,7 @@ Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Young
 
 
 Loads = [
-NeumanBC(type="PL", Magnitude=-10000, Distance1= 2.5, AssignedTo="Member 1", Members = Members)
+NeumanBC(type="PL", Magnitude=-10000, Distance1= 4.5, AssignedTo="Member 1", Members = Members)
 ] 
 
 
