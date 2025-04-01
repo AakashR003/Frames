@@ -6,7 +6,6 @@ from scipy.linalg import eig
 import math
 import scipy.sparse as sp
 from scipy.sparse.linalg import eigs, cg
-from sksparse.cholmod import cholesky
 from scipy.sparse import csc_matrix
 
 
