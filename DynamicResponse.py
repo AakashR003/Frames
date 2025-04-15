@@ -11,13 +11,13 @@ from scipy.sparse import csc_matrix
 
 
 try:
-    from .main import Model
+    from .Model import Model
     from .config import config
     from .StructuralElements import Node, Member
     from .Computer import Computer
     from .Functions import max_nested
 except:
-    from main import Model
+    from Model import Model
     from config import config
     from StructuralElements import Node, Member
     from Computer import Computer

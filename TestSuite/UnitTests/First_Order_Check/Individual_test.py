@@ -10,7 +10,7 @@ import pytest
 import numpy as np
 
 from config import config
-from main import Model
+from Model import Model
 from StructuralElements import Node, Member
 from Loads import NeumanBC
 

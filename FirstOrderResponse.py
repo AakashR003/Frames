@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 
 
 try:
-    from .main import Model
+    from .Model import Model
     from .StructuralElements import Node, Member
     from .config import config
     from .Computer import Computer
     from .Functions import max_nested
 except:
-    from main import Model
+    from Model import Model
     from StructuralElements import Node, Member
     from config import config
     from Computer import Computer

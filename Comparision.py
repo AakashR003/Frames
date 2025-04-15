@@ -4,11 +4,11 @@ import numpy as np
 
 
 try:
-    from .main import Model
+    from .Model import Model
     from .StructuralElements import Node, Member
     from .Computer import Computer
 except:
-    from main import Model
+    from Model import Model
     from StructuralElements import Node, Member
     from Computer import Computer
 
