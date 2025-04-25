@@ -2,13 +2,13 @@ import numpy as np
 
 
 try:
-    from .main import Model
+    from .Model import Model
     from .StructuralElements import Node, Member
     from .Computer import Computer
     from .Functions import max_nested
     from .FirstOrderResponse import FirstOrderGlobalResponse
 except:
-    from main import Model
+    from Model import Model
     from StructuralElements import Node, Member
     from Computer import Computer
     from Functions import max_nested

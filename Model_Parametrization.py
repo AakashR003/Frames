@@ -1,10 +1,10 @@
 
 try:
     from .StructuralElements import Node, Member
-    from .main import Model
+    from .Model import Model
 except:
     from StructuralElements import Node, Member
-    from main import Model
+    from Model import Model
 
 def create_framed_structure(x_bays, y_bays, x_spacing, y_spacing):
     Points = []
