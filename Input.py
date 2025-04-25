@@ -74,6 +74,7 @@ Model1.PlotGlobalModel()
 
 #print(MemberRes1.MemberForceLocal(1,All = True))
 MemberRes1.PlotMemberBMD(1)
+MemberRes1.PlotMemberSFD(1)
 SecondOrderMemberResponse1.PlotMemberBMD(1)
 print(MemberRes1.MemberForceLocal(1, All = True))
 print(SecondOrderMemberResponse1.MemberForceLocal(1, All = True))
