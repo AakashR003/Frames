@@ -336,6 +336,7 @@ class FirstOrderMemberResponse(FirstOrderGlobalResponse):
             y_m_max = abs(y_m_max)
             y_m_min = -abs(y_m_min)
         
+        self.MemberAmplitude(self.MemberNo).pop()
         c = self.MemberAmplitude(self.MemberNo)
         d = MemberSFD
         g = [0, self.Members[self.MemberNo-1].length()]
