@@ -17,8 +17,8 @@ from Functions import print_class_Objects
 config.set_FEDivision(1000)
 Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
-Node(Node_Number=2, xcoordinate=10, ycoordinate=0, Support_Condition="Fixed Support"),
-Node(Node_Number=3, xcoordinate=11, ycoordinate=0, Support_Condition="Fixed Support"),
+Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Rigid Joint"),
+Node(Node_Number=3, xcoordinate=10, ycoordinate=0, Support_Condition="Fixed Support"),
 #Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Hinged Support")
 ]
 
@@ -31,8 +31,8 @@ Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Young
 
 
 Loads = [
-NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
-#NeumanBC(type="PL", Magnitude=-10, Distance1= 1, AssignedTo="Member 1", Members = Members)
+#NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
+NeumanBC(type="PL", Magnitude=-10, Distance1= 4, AssignedTo="Member 1", Members = Members)
 ] 
 
 
@@ -73,15 +73,15 @@ Model1.PlotGlobalModel()
 #print(GlobalRes1.DisplacementVectorDict())
 
 #print(MemberRes1.MemberForceLocal(1,All = True))
-MemberRes1.PlotMemberBMD(1)
-MemberRes1.PlotMemberSFD(1)
+#MemberRes1.PlotMemberBMD(1)
+#MemberRes1.PlotMemberSFD(1)
 SecondOrderMemberResponse1.PlotMemberBMD(1)
-print(MemberRes1.MemberForceLocal(1, All = True))
-print(SecondOrderMemberResponse1.MemberForceLocal(1, All = True))
-MemberRes1.PlotGlobalBMD(show_structure=True)
-MemberRes1.PlotGlobalSFD(show_structure=True, scale_factor=2)
-SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
-SecondOrderMemberResponse1.PlotGlobalSFD(show_structure=True)
+#print(MemberRes1.MemberForceLocal(1, All = True))
+#print(SecondOrderMemberResponse1.MemberForceLocal(1, All = True))
+MemberRes1.PlotGlobalBMD(show_structure=True, scale_factor=2)
+#MemberRes1.PlotGlobalSFD(show_structure=True, scale_factor=2)
+SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True, scale_factor=2)
+#SecondOrderMemberResponse1.PlotGlobalSFD(show_structure=True)
 #MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.BucklingEigenLoad())
 #SecondOrderResponse1.PlotEigenMode(EigenModeNo = 3, Solver="eigsh", scale_factor = 1)
