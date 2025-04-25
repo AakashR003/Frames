@@ -73,9 +73,9 @@ class NeumanBC():
         self.mfab=-((2*(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3)
         self.mfba=(2*(tarea*centroid*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length())-(tarea*(self.Members[self.MemberNo].length()-centroid)*6/self.Members[self.MemberNo].length()/self.Members[self.MemberNo].length()))/3
 
-        self.V_b=-(-self.mfab-self.mfba+vb*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
-        self.V_a=-(self.mfab+self.mfba+va*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
-        
+        self.V_b=-(+self.mfab+self.mfba+vb*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
+        self.V_a=-(-self.mfab-self.mfba+va*self.Members[self.MemberNo].length())/self.Members[self.MemberNo].length()
+
         LocalFixedEndForce = [0, self.V_a, self.mfab, 0, self.V_b, self.mfba]
         GlobalFixedEndForce = np.dot(np.transpose(self.Members[self.MemberNo].Transformation_Matrix()), LocalFixedEndForce) 
 

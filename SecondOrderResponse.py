@@ -337,7 +337,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
 
         # Vectorized calculations for abcd2 and abcd3
         abcd2 = (amp_values / length) * (-fem2 - fem1) + fem1
-        abcd3 = abcd1 + abcd2
+        abcd3 = -abcd1 + abcd2
 
         # Calculate shear forces using vectorized difference
         step = length / (FEDivision - 1)
