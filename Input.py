@@ -19,7 +19,7 @@ Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
 Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Hinge Joint"),
 #Node(Node_Number=3, xcoordinate=5, ycoordinate=0, Support_Condition="Rigid Joint"),
-Node(Node_Number=3, xcoordinate=10, ycoordinate=0, Support_Condition="Hinged Support"),
+Node(Node_Number=3, xcoordinate=10, ycoordinate=0, Support_Condition="Fixed Support"),
 #Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Hinged Support")
 ]
 
@@ -37,8 +37,9 @@ Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Young
 
 Loads = [
 #NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
-NeumanBC(type="PL", Magnitude=-10, Distance1= 4, AssignedTo="Member 2", Members = Members)
-] 
+#NeumanBC(type="PL", Magnitude=-10, Distance1= 4, AssignedTo="Member 2", Members = Members),
+NeumanBC(type="NL", Magnitude=-10, AssignedTo="Node 2", Members = Members, Nodes = Points)
+]
 
 
 
@@ -66,6 +67,7 @@ print("constrained dof",Model1.ConstrainedDoF())
 
 print("dof number",Members[0].DoFNumber())
 print("dof number",Members[1].DoFNumber())
+print("Force Vector",Model1.ForceVector())
 
 
 #MemberRes1.PlotMemberBMD(2)

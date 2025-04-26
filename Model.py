@@ -72,7 +72,6 @@ class Model():
             if node.support_condition=="Hinge Joint" :
                 UnConstrainedDoFList.append(node.dof_x)
                 UnConstrainedDoFList.append(node.dof_y)
-                print("additional dof tita",node.additional_dof_tita)
                 UnConstrainedDoFList = UnConstrainedDoFList + node.additional_dof_tita
                 
             if node.support_condition=="Hinged Joint Support" :
@@ -170,12 +169,18 @@ class Model():
     def ForceVector(self):
         self.ForceVectorDict=self.TotalDoFDict()
         for var1 in self.Loads:
-            self.ForceVectorDict[var1.EquivalentLoad()['Va'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Va'][1]] + var1.EquivalentLoad()['Va'][0]
-            self.ForceVectorDict[var1.EquivalentLoad()['Vb'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Vb'][1]] + var1.EquivalentLoad()['Vb'][0]
-            self.ForceVectorDict[var1.EquivalentLoad()['Ha'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Ha'][1]] + var1.EquivalentLoad()['Ha'][0]
-            self.ForceVectorDict[var1.EquivalentLoad()['Hb'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Hb'][1]] + var1.EquivalentLoad()['Hb'][0]
-            self.ForceVectorDict[var1.EquivalentLoad()['Ma'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Ma'][1]] + var1.EquivalentLoad()['Ma'][0]
-            self.ForceVectorDict[var1.EquivalentLoad()['Mb'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Mb'][1]] + var1.EquivalentLoad()['Mb'][0]
+            if var1.type == "NL":
+                self.ForceVectorDict[var1.NodalLoad()['Fx'][1]] = self.ForceVectorDict[var1.NodalLoad()['Fx'][1]] + var1.NodalLoad()['Fx'][0]
+                self.ForceVectorDict[var1.NodalLoad()['Fy'][1]] = self.ForceVectorDict[var1.NodalLoad()['Fy'][1]] + var1.NodalLoad()['Fy'][0]
+                self.ForceVectorDict[var1.NodalLoad()['Moment'][1]] = self.ForceVectorDict[var1.NodalLoad()['Moment'][1]] + var1.NodalLoad()['Moment'][0]
+            
+            else:
+                self.ForceVectorDict[var1.EquivalentLoad()['Va'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Va'][1]] + var1.EquivalentLoad()['Va'][0]
+                self.ForceVectorDict[var1.EquivalentLoad()['Vb'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Vb'][1]] + var1.EquivalentLoad()['Vb'][0]
+                self.ForceVectorDict[var1.EquivalentLoad()['Ha'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Ha'][1]] + var1.EquivalentLoad()['Ha'][0]
+                self.ForceVectorDict[var1.EquivalentLoad()['Hb'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Hb'][1]] + var1.EquivalentLoad()['Hb'][0]
+                self.ForceVectorDict[var1.EquivalentLoad()['Ma'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Ma'][1]] + var1.EquivalentLoad()['Ma'][0]
+                self.ForceVectorDict[var1.EquivalentLoad()['Mb'][1]] = self.ForceVectorDict[var1.EquivalentLoad()['Mb'][1]] + var1.EquivalentLoad()['Mb'][0]
         ForceVector = []
         for var2 in self.UnConstrainedDoF():
             ForceVector.append(self.ForceVectorDict[var2])
