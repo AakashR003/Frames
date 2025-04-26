@@ -72,7 +72,8 @@ class Model():
             if node.support_condition=="Hinge Joint" :
                 UnConstrainedDoFList.append(node.dof_x)
                 UnConstrainedDoFList.append(node.dof_y)
-                UnConstrainedDoFList.append(node.dof_tita)
+                print("additional dof tita",node.additional_dof_tita)
+                UnConstrainedDoFList = UnConstrainedDoFList + node.additional_dof_tita
                 
             if node.support_condition=="Hinged Joint Support" :
                 UnConstrainedDoFList.append(node.dof_tita)

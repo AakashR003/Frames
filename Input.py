@@ -17,21 +17,21 @@ from Functions import print_class_Objects
 config.set_FEDivision(1000)
 Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
-Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Rigid Joint"),
-Node(Node_Number=3, xcoordinate=5, ycoordinate=0, Support_Condition="Rigid Joint"),
-Node(Node_Number=4, xcoordinate=10, ycoordinate=0, Support_Condition="Hinged Support"),
+Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Hinge Joint"),
+#Node(Node_Number=3, xcoordinate=5, ycoordinate=0, Support_Condition="Rigid Joint"),
+Node(Node_Number=3, xcoordinate=10, ycoordinate=0, Support_Condition="Hinged Support"),
 #Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Hinged Support")
 ]
 
-Coupling = [
+"""Coupling = [
 Couple_Nodes(Main_Node=Points[1], Dependent_Node=Points[2], xDof=True, yDof=True, RotationDof=False),
-]
+]"""
 
 
 Members = [
 Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
-#Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
-Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+#Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 ] # square cross section - 0.3 x 0.3, units N, m
 
 
@@ -61,10 +61,11 @@ DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loa
 Model1.PlotGlobalModel()
 print(Members[0].First_Order_Local_Stiffness_Matrix_1())
 print(Members[1].First_Order_Local_Stiffness_Matrix_1())
-print(Model1.ConstrainedDoF())
+print("unconstrained dof",Model1.UnConstrainedDoF())
+print("constrained dof",Model1.ConstrainedDoF())
 
-print(Members[0].DoFNumber())
-print(Members[1].DoFNumber())
+print("dof number",Members[0].DoFNumber())
+print("dof number",Members[1].DoFNumber())
 
 
 #MemberRes1.PlotMemberBMD(2)
@@ -87,7 +88,7 @@ print(Members[1].DoFNumber())
 #print(MemberRes1.MemberForceLocal(1,All = True))
 #MemberRes1.PlotMemberBMD(1)
 #MemberRes1.PlotMemberSFD(1)
-SecondOrderMemberResponse1.PlotMemberBMD(1)
+#SecondOrderMemberResponse1.PlotMemberBMD(1)
 #print(MemberRes1.MemberForceLocal(1, All = True))
 #print(SecondOrderMemberResponse1.MemberForceLocal(1, All = True))
 MemberRes1.PlotGlobalBMD(show_structure=True, scale_factor=2)
