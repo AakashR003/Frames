@@ -19,21 +19,25 @@ class Node():
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
             self.dof_tita=(self.node_number)*3
+
         elif self.support_condition == "Hinge Joint" :
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
-            self.dof_tita=3000+Node.titam
-            Node.titam += 1
+            self.dof_tita=300000
+            self.additional_dof_tita=[]
+
         elif self.support_condition == "Glided Support" :
             self.dof_x=(self.node_number)*3-2
-            self.dof_y=2000+Node.titay
+            self.dof_y=200000
+            self.additional_dof_y = []
             self.dof_tita=(self.node_number)*3
-            Node.titay += 1
+
         elif self.support_condition == "Hinged Joint Support" or self.support_condition == "Roller in X-plane-Hinge" :
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
-            self.dof_tita=3000+Node.titam
-            Node.titam += 1
+            self.dof_tita=300000
+            self.additional_dof_tita=[]
+        
         else:
             raise ValueError(f"Unsupported support condition: '{self.support_condition}'")
         
@@ -41,7 +45,29 @@ class Node():
     def DoF(self):
         self.check1 = [self.dof_x, self.dof_y, self.dof_tita]    
         return [self.dof_x, self.dof_y, self.dof_tita]
+
+
+class Couple_Nodes():
         
+    def __init__ (self, Main_Node, Dependent_Node, xDof = True, yDof = True, RotationDof = True):
+        self.Main_Node = Main_Node
+        self.Dependent_Node = Dependent_Node
+        self.xDof = xDof
+        self.yDof = yDof
+        self.titaDof = RotationDof
+
+        if self.xDof == True:
+            self.Dependent_Node.dof_x  = self.Main_Node.dof_x
+
+        if self.yDof == True:
+            self.Dependent_Node.dof_y  = self.Main_Node.dof_y
+
+        if self.titaDof == True:
+            self.Dependent_Node.dof_tita  = self.Main_Node.dof_tita
+        
+    def CoupledDoF(self):
+        return [self.Main_Node_Number, self.Dependent_Node_Number, self.xDof, self.yDof, self.titaDof]   
+            
     
 class Member():
     
@@ -55,7 +81,15 @@ class Member():
         self.youngs_modulus = Youngs_Modulus
         self.moment_of_inertia = Moment_of_Inertia
         self.Density = Density
-        
+
+        #Additional for Hinge Joint
+        if self.Start_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
+            self.Start_Node.additional_dof_tita.append(300000 + self.Beam_Number*2-1)
+
+        if self.End_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
+            self.End_Node.additional_dof_tita.append(300000 + self.Beam_Number*2)
+        #ends Here
+
     def length(self):
         x=((self.End_Node.xcoordinate-self.Start_Node.xcoordinate)**2 +
            (self.End_Node.ycoordinate-self.Start_Node.ycoordinate)**2)**0.5
@@ -68,6 +102,15 @@ class Member():
         return (self.End_Node.ycoordinate-self.Start_Node.ycoordinate)/self.length()
     
     def DoFNumber(self):
+
+        #Additional for Hinge Joint
+        if self.Start_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
+            self.Start_Node.dof_tita = 300000 + self.Beam_Number*2-1
+
+        if self.End_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
+            self.End_Node.dof_tita = 300000 + self.Beam_Number*2
+        #Ends Here
+        
         return(self.Start_Node.DoF() + self.End_Node.DoF())
     
     def Transformation_Matrix(self):
