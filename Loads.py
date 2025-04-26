@@ -12,13 +12,39 @@ class NeumanBC():
         self.Magnitude = kwargs.get("Magnitude", None)
         self.Distance1 = kwargs.get("Distance1", None)
         self.Distance2 = kwargs.get("Distance2", None)
+        self.Angle = kwargs.get("Angle", 0)
         self.AssignedTo = kwargs.get("AssignedTo", None)
         self.Members = kwargs.get("Members", None)
+        self.Points = kwargs.get("Nodes", None)
         
         self.MemberNo = int(self.AssignedTo.split()[1])-1
     
+    def NodalLoad(self):
+
+        if self.type == "NL":
+
+            Load = {"Fx":(self.Magnitude * np.sin(np.radians(self.Angle)), self.Points[self.MemberNo].dof_x),
+                    "Fy":(self.Magnitude * np.cos(np.radians(self.Angle)), self.Points[self.MemberNo].dof_y), 
+                    "Moment":(0, self.Points[self.MemberNo].dof_tita)}
+            
+            return Load
+            
+    
     def EquivalentLoad(self, ReturnLocal = False):
         
+        if self.type == "NL":
+
+            if ReturnLocal == True:
+                return [0,0,0,0,0,0]
+
+            return {"Ha":(0,self.Members[0].DoFNumber()[0]),
+                "Va":(0,self.Members[0].DoFNumber()[1]),
+                "Ma":(0,self.Members[0].DoFNumber()[2]),
+                "Hb":(0,self.Members[0].DoFNumber()[3]),
+                "Vb":(0,self.Members[0].DoFNumber()[4]),
+                "Mb":(0,self.Members[0].DoFNumber()[5]),
+                "FreeMoment": np.zeros(config.get_FEDivision())}#[self.V_a,self.mfab,self.V_b,self.mfba]
+
         FEDivision = config.get_FEDivision()
         self.frml=[] # Free moment Distribution(Simply supported) along beam 
         tarea=0
