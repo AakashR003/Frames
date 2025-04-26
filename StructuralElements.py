@@ -19,21 +19,25 @@ class Node():
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
             self.dof_tita=(self.node_number)*3
+
         elif self.support_condition == "Hinge Joint" :
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
-            self.dof_tita=3000+Node.titam
-            Node.titam += 1
+            self.dof_tita=300000
+            self.additional_dof_tita=None
+
         elif self.support_condition == "Glided Support" :
             self.dof_x=(self.node_number)*3-2
-            self.dof_y=2000+Node.titay
+            self.dof_y=200000
+            self.additional_dof_y = None
             self.dof_tita=(self.node_number)*3
-            Node.titay += 1
+
         elif self.support_condition == "Hinged Joint Support" or self.support_condition == "Roller in X-plane-Hinge" :
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
-            self.dof_tita=3000+Node.titam
-            Node.titam += 1
+            self.dof_tita=300000
+            self.additional_dof_tita=None
+        
         else:
             raise ValueError(f"Unsupported support condition: '{self.support_condition}'")
         
@@ -41,7 +45,29 @@ class Node():
     def DoF(self):
         self.check1 = [self.dof_x, self.dof_y, self.dof_tita]    
         return [self.dof_x, self.dof_y, self.dof_tita]
+
+
+class Couple_Nodes():
         
+    def __init__ (self, Main_Node, Dependent_Node, xDof = True, yDof = True, RotationDof = True):
+        self.Main_Node = Main_Node
+        self.Dependent_Node = Dependent_Node
+        self.xDof = xDof
+        self.yDof = yDof
+        self.titaDof = RotationDof
+
+        if self.xDof == True:
+            self.Dependent_Node.dof_x  = self.Main_Node.dof_x
+
+        if self.yDof == True:
+            self.Dependent_Node.dof_y  = self.Main_Node.dof_y
+
+        if self.titaDof == True:
+            self.Dependent_Node.dof_tita  = self.Main_Node.dof_tita
+        
+    def CoupledDoF(self):
+        return [self.Main_Node_Number, self.Dependent_Node_Number, self.xDof, self.yDof, self.titaDof]   
+            
     
 class Member():
     

@@ -41,6 +41,13 @@ class Model():
         self.NoMembers = len(self.Members)
     
     def UnConstrainedDoF(self):
+        """
+        Returns a list of unconstrained degrees of freedom (DoF) for the model. 
+        The unconstrained DoF are determined based on the support conditions of the nodes.
+        The function iterates through each node in the model and appends the corresponding DoF to the UnConstrainedDoFList.
+        The function asumes an additional DOF for each node for all dof for excess dof consideration which will be helpful in 
+        hinge joint and glided support creation above 100000"""
+
         UnConstrainedDoFList=[]
         ConstrainedDoFList=[]
         for node in self.Points:
@@ -81,6 +88,8 @@ class Model():
                 
             else:
                 pass
+        #Additional check to remove the duplicate dof from the list
+        UnConstrainedDoFList= list(set(UnConstrainedDoFList))
         return UnConstrainedDoFList
         
     def ConstrainedDoF(self):
