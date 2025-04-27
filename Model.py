@@ -75,10 +75,10 @@ class Model():
                 UnConstrainedDoFList = UnConstrainedDoFList + node.additional_dof_tita
                 
             if node.support_condition=="Hinged Joint Support" :
-                UnConstrainedDoFList.append(node.dof_tita)
+                UnConstrainedDoFList = UnConstrainedDoFList + node.additional_dof_tita
                 
             if node.support_condition=="Roller in X-plane-Hinge" :
-                UnConstrainedDoFList.append(node.dof_tita)
+                UnConstrainedDoFList = UnConstrainedDoFList + node.additional_dof_tita
                 UnConstrainedDoFList.append(node.dof_x)
                 
             if(node.support_condition=="Rigid Joint"):
