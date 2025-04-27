@@ -5,6 +5,11 @@ except:
 
 # Finite Element maker
 def divide_into_finite_elements(nodes, members, loads, num_elements):
+    #Clear the memory for additional dof tita
+    for node in nodes:
+        node.additional_dof_tita = []
+
+    #Acttual code starts here
     new_nodes = nodes.copy()
     new_members = []
     new_loads = []

@@ -14,6 +14,7 @@ class Node():
         self.xcoordinate = xcoordinate
         self.ycoordinate = ycoordinate
         self.support_condition = Support_Condition
+        self.additional_dof_tita=[]
 
         if self.support_condition in ["Hinged Support", "Fixed Support", "Rigid Joint", "Roller in X-plane", "Roller in Y-plane"]:
             self.dof_x=(self.node_number)*3-2
@@ -24,7 +25,7 @@ class Node():
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
             self.dof_tita=300000
-            self.additional_dof_tita=[]
+            #self.additional_dof_tita=[]
 
         elif self.support_condition == "Glided Support" :
             self.dof_x=(self.node_number)*3-2
@@ -36,7 +37,7 @@ class Node():
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
             self.dof_tita=300000
-            self.additional_dof_tita=[]
+            #self.additional_dof_tita=[]
         
         else:
             raise ValueError(f"Unsupported support condition: '{self.support_condition}'")
@@ -88,7 +89,7 @@ class Member():
 
         if self.End_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
             self.End_Node.additional_dof_tita.append(300000 + self.Beam_Number*2)
-        #ends Here
+            #ends Here
 
     def length(self):
         x=((self.End_Node.xcoordinate-self.Start_Node.xcoordinate)**2 +
