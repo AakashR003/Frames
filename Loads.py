@@ -23,9 +23,13 @@ class NeumanBC():
 
         if self.type == "NL":
 
+            if self.Points[self.MemberNo].support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
+                dof_tita = self.Points[self.MemberNo].additional_dof_tita[0]
+            else:
+                dof_tita = self.Points[self.MemberNo].dof_tita
             Load = {"Fx":(self.Magnitude * np.sin(np.radians(self.Angle)), self.Points[self.MemberNo].dof_x),
                     "Fy":(self.Magnitude * np.cos(np.radians(self.Angle)), self.Points[self.MemberNo].dof_y), 
-                    "Moment":(0, self.Points[self.MemberNo].dof_tita)}
+                    "Moment":(0, dof_tita)}
             
             return Load
             
