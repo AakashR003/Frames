@@ -330,7 +330,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
 
         # Process loads using vectorization
         for load in self.Loads:
-            if int(load.AssignedTo[-1]) == MemberNo:
+            if int(load.AssignedTo.split()[1]) == MemberNo:
                 
                 free_moment = np.array(load.EquivalentLoad()['FreeMoment'][:FEDivision])
                 abcd1 += free_moment if alpha >= 0 else -free_moment
