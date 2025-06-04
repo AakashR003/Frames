@@ -7,12 +7,14 @@ try:
     from .Computer import Computer
     from .Functions import max_nested
     from .FirstOrderResponse import FirstOrderGlobalResponse
+    from .SecondOrderResponse import SecondOrderGlobalResponse
 except:
     from Model import Model
     from StructuralElements import Node, Member
     from Computer import Computer
     from Functions import max_nested
     from FirstOrderResponse import FirstOrderGlobalResponse
+    from SecondOrderResponse import SecondOrderGlobalResponse
 
 class Senstivity(FirstOrderGlobalResponse):
 
@@ -24,7 +26,7 @@ class Senstivity(FirstOrderGlobalResponse):
                 self.Members[i].area += scale
                 
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))/scale
+        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
 
         return sensitivity
@@ -37,7 +39,7 @@ class Senstivity(FirstOrderGlobalResponse):
                 self.Members[i].moment_of_inertia += scale
         
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))/scale
+        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
 
         return sensitivity
@@ -50,7 +52,7 @@ class Senstivity(FirstOrderGlobalResponse):
                 self.Members[i].youngs_modulus += scale
         
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))/scale
+        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
 
         return sensitivity
@@ -63,7 +65,7 @@ class Senstivity(FirstOrderGlobalResponse):
                 self.Points[i].xcoordinate += scale
         
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))/scale
+        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
 
         return sensitivity
@@ -76,7 +78,7 @@ class Senstivity(FirstOrderGlobalResponse):
                 self.Points[i].ycoordinate += scale
         
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))/scale
+        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
 
         return sensitivity
@@ -102,3 +104,97 @@ class Senstivity(FirstOrderGlobalResponse):
     def PlotSensitivity(self,SensitivityType):
         sensitivities = self.GlobalSizeSensitivity(SensitivityType)
         self.PlotGlobalModel(sensitivities)
+
+class SecondOrderSensitivity(SecondOrderGlobalResponse):
+    """
+    This class is a placeholder for second-order sensitivity analysis.
+    Currently, it does not implement any specific methods.
+    """
+    
+    def NodeXSensitivity(self,NodeNumber,scale, EigenModeNo = 1):
+
+        #unchanged system
+        NoMem = len(self.Members)
+        UnModifiedSM = self.GlobalStiffnessMatrixCondensed()
+
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(-MemberForceLocal[0])
+        UnModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+
+        #small perturbation
+        for i in range(len(self.Points)):
+            if self.Points[i].node_number == NodeNumber:
+                self.Points[i].xcoordinate += scale
+        
+        #changed system
+        ModifiedSM = self.GlobalStiffnessMatrixCondensed()
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(-MemberForceLocal[0])
+        ModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+
+        Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+        Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1]
+
+        d_KnodeX_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
+        d_KgNodeX_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
+
+        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KnodeX_ds - Eigen_load* d_KgNodeX_ds)), Eigen_mode)
+
+        return sensitivity
+    
+    def NodeYSensitivity(self,NodeNumber,scale, EigenModeNo = 1):
+        #unchanged system
+        NoMem = len(self.Members)
+        UnModifiedSM = self.GlobalStiffnessMatrixCondensed()
+
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(-MemberForceLocal[0])
+        UnModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+
+        #small perturbation
+        for i in range(len(self.Points)):
+            if self.Points[i].node_number == NodeNumber:
+                self.Points[i].ycoordinate += scale
+        
+        #changed system
+        ModifiedSM = self.GlobalStiffnessMatrixCondensed()
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(-MemberForceLocal[0])
+        ModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+
+        Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+        Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1]
+
+        d_KnodeY_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
+        d_KgNodeY_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
+        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KnodeY_ds - Eigen_load* d_KgNodeY_ds)), Eigen_mode)
+        return sensitivity
+
+    def GlobalShapeSensitivity(self):
+        return None
+    
+    def GlobalSizeSensitivity(self):
+        return None
+    
+    def PlotSensitivity(self):
+        return None
