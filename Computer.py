@@ -1,11 +1,12 @@
 
 
 import numpy as np
+from decimal import Decimal, getcontext
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from scipy.sparse.linalg import eigsh, cg
 from scipy.linalg import eig
-#from sksparse.cholmod import cholesky
+from sksparse.cholmod import cholesky
 
 class Computer():
     """
@@ -73,6 +74,50 @@ class Computer():
     
     def ConjugateGradientDisplacementSolver():
         return None
+
+    def DeterminantSolver(StiffnessMatrix):
+
+        """
+        if CholeskyMethod == True:
+            K = sp.csc_matrix(StiffnessMatrix)/Norm
+            factor = cholesky(K)
+            logdet = 2 * np.sum(np.log(factor.D()))
+            Determinant = np.exp(logdet)
+
+            return Determinant
+        Determinant = np.linalg.det(StiffnessMatrix/Norm)
+
+        
+        Computes a numerically stable determinant of matrix K.
+        Scales the matrix using median absolute value and uses SVD-based log-determinant.
+        Returns the actual determinant and log-determinant.
+        """
+        K= np.array(StiffnessMatrix)
+        precision = 5
+        getcontext().prec = precision  # Set precision
+
+        K = np.array(K, dtype=object)
+        K = np.vectorize(lambda x: Decimal(str(x)))(K)  # Convert to Decimal
+
+        n = K.shape[0]
+        det = Decimal(1)
+
+        # Basic LU decomposition with partial pivoting
+        for i in range(n):
+            pivot = i + np.argmax([abs(K[j, i]) for j in range(i, n)])
+            if K[pivot, i] == 0:
+                return Decimal(0)
+            if pivot != i:
+                K[[i, pivot]] = K[[pivot, i]]
+                det *= -1  # row swap changes sign
+
+            det *= K[i, i]
+
+            for j in range(i + 1, n):
+                factor = K[j, i] / K[i, i]
+                K[j, i:] = [K[j, k] - factor * K[i, k] for k in range(i, n)]
+
+        return +det  # unary plus rounds to current context precision
 
     def SupportForceVector():
         return None
