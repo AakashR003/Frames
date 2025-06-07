@@ -111,6 +111,22 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
     This class is a placeholder for second-order sensitivity analysis.
     Currently, it does not implement any specific methods.
     """
+
+    def compute_SM(self):
+        NoMem = len(self.Members)
+        SM = self.GlobalStiffnessMatrixCondensed()
+
+        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
+        NorForList =[]
+        for i in range(NoMem):
+            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
+            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
+            NorForList.append(-MemberForceLocal[0])
+        GeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+
+        return SM, GeoSM
+    
     
     def NodeXSensitivity(self,NodeNumber,scale, EigenModeNo = 1):
 
@@ -191,41 +207,24 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KnodeY_ds - Eigen_load* d_KgNodeY_ds)), Eigen_mode)
         return sensitivity
     
-    def BeamBendingSensitivity(self,MemberNumber,scale, EigenModeNo = 1):
+    def BeamBendingSensitivity(self,MemberNumber,scale, Eigen, EigenModeNo = 1):
 
-        #unchanged system
-        NoMem = len(self.Members)
-        UnModifiedSM = self.GlobalStiffnessMatrixCondensed()
-
-        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
-        NorForList =[]
-        for i in range(NoMem):
-            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(-MemberForceLocal[0])
-        UnModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
-
+        UnModifiedSM, UnModifiedGeoSM = self.compute_SM()
+        
         #small perturbation
         for i in range(len(self.Members)):
             if i == MemberNumber-1:
-                print(self.Members[i].moment_of_inertia)
                 self.Members[i].moment_of_inertia += scale
-                print(self.Members[i].moment_of_inertia)
-        
-        #changed system
-        ModifiedSM = self.GlobalStiffnessMatrixCondensed()
-        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
-        NorForList =[]
-        for i in range(NoMem):
-            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(-MemberForceLocal[0])
-        ModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+                
+        #Modified system
+        ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
-        Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
-        Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        if Eigen is None:
+            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        else:
+            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
+            Eigen_load = Eigen[1][EigenModeNo-1]
 
         d_KMemberBen_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
         d_KgMemberBen_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
@@ -238,55 +237,17 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
 
 
     def GlobalSecondOrderShapeSensitivity(self, EigenModeNo = 1):
+        Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
-            self.BeamBendingSensitivity(i+1, 1e-10, EigenModeNo = EigenModeNo)
+            self.BeamBendingSensitivity(i+1, 1e-10, Eigen = Eigen, EigenModeNo = EigenModeNo)
+        sensitivity_values = [member.LBSensitivityBend for member in self.Members]
 
         fig, ax = plt.subplots(figsize=(12, 8))
         computer_instance = Computer()
-        computer_instance.PlotStructuralElements(ax, self.Members, self.Points, ShowNodeNumber=False)
-
-        # Color mapping code - add this after the above call
-        # Extract sensitivity values from members
-        sensitivity_values = [member.LBSensitivityBend for member in self.Members]
-        print(sensitivity_values)
-        
-        # Get min and max values
-        min_sensitivity = min(sensitivity_values)
-        max_sensitivity = max(sensitivity_values)
-
-        # Create color mapping (Red to Blue)
-        for i, member in enumerate(self.Members):
-            start_node = member.Start_Node
-            end_node = member.End_Node
-            
-            # Normalize the sensitivity value (0 to 1)
-            if max_sensitivity == min_sensitivity:
-                normalized_sensitivity = 0.5  # Handle case where all values are the same
-            else:
-                normalized_sensitivity = (sensitivity_values[i] - min_sensitivity) / (max_sensitivity - min_sensitivity)
-            
-            print(normalized_sensitivity)
-            
-            # Create RGB color (Red to Blue mapping)
-            # Red = (1, 0, 0) for min values, Blue = (0, 0, 1) for max values
-            red_component = 1 - normalized_sensitivity  # More red for lower values
-            blue_component = normalized_sensitivity     # More blue for higher values
-            color = (red_component, 0, blue_component)
-
-            color = plt.cm.RdBu_r(normalized_sensitivity)
-            
-            # Plot the colored member
-            ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
-                    [start_node.ycoordinate, end_node.ycoordinate], 
-                    color=color, linewidth=3)  # Made linewidth thicker to show colors better
-        # Add colorbar
-        sm = plt.cm.ScalarMappable(cmap=plt.cm.RdBu_r, norm=plt.Normalize(vmin=min_sensitivity, vmax=max_sensitivity))
-        sm.set_array([])
-        cbar = plt.colorbar(sm, ax=ax)
-        cbar.set_label('LB Sensitivity Bend', rotation=270, labelpad=15)
-
-        ax.set_title(f"Buckling Eigenmode Shape Sensitivity", fontsize=16)
+        computer_instance.PlotStructuralElements(ax, self.Members, self.Points, ShowNodeNumber=False, sensitivities= sensitivity_values)
+                
+        ax.set_title(f"Buckling Eigenmode Size Sensitivity", fontsize=16)
         ax.axis('equal')
         plt.show()
         return None

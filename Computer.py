@@ -259,21 +259,26 @@ class Computer():
         sensitivities: optional list of sensitivity values for color coding
         """
         # Plot members
+        if sensitivities is not None:
+            min_sensitivity = min(sensitivities)
+            max_sensitivity = max(sensitivities)
+            # Add colorbar
+            sm = plt.cm.ScalarMappable(cmap=plt.cm.RdBu_r, norm=plt.Normalize(vmin=min_sensitivity, vmax=max_sensitivity))
+            sm.set_array([])
+            cbar = plt.colorbar(sm, ax=ax)
+            cbar.set_label('Sensitivity', rotation=270, labelpad=15)
+
+            
         for i, member in enumerate(Members):
             start_node = member.Start_Node
             end_node = member.End_Node
             if sensitivities is not None:
                 # Normalize sensitivities
-                min_sensitivity = min(sensitivities)
-                max_sensitivity = max(sensitivities)
-                if max_sensitivity == min_sensitivity:
-                    normalized_sensitivity = 0.5
-                else:
-                    normalized_sensitivity = (sensitivities[i] - min_sensitivity) / (max_sensitivity - min_sensitivity)
-                color = plt.cm.OrRd(normalized_sensitivity)
+                normalized_sensitivity = (sensitivities[i] - min_sensitivity) / (max_sensitivity - min_sensitivity)
+                color = plt.cm.RdBu_r(normalized_sensitivity)
                 ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
                         [start_node.ycoordinate, end_node.ycoordinate], 
-                        color=color, linewidth = 2)
+                        color=color, linewidth = 3)
             else:
                 ax.plot([start_node.xcoordinate, end_node.xcoordinate], 
                        [start_node.ycoordinate, end_node.ycoordinate], 'b-',

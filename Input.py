@@ -45,7 +45,7 @@ NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Member
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 5)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 20)
 
 
 #main Model part - Main mode part includes sub model part
@@ -64,7 +64,7 @@ Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads 
 
 Model1.PlotGlobalModel()
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 2, Solver="eigsh", scale_factor = 1)
-Sensitivity1.GlobalSecondOrderShapeSensitivity(EigenModeNo = 2)
+Sensitivity1.GlobalSecondOrderShapeSensitivity(EigenModeNo = 1)
 
 print(Sensitivity1.NodeYSensitivity(NodeNumber=1, scale=0.01))
 print(Sensitivity1.NodeYSensitivity(NodeNumber=10, scale=0.01))
