@@ -16,7 +16,7 @@ from Functions import print_class_Objects
 #Model Parts - Basic essential for building a model
 config.set_FEDivision(1000)
 Points = [
-Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
+Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
 #Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Hinge Joint"),
 Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
 Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Rigid Joint"),
@@ -45,7 +45,7 @@ NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Member
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 20)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 5)
 
 
 #main Model part - Main mode part includes sub model part
@@ -63,6 +63,9 @@ Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads 
 
 
 Model1.PlotGlobalModel()
+SecondOrderResponse1.PlotEigenMode(EigenModeNo = 2, Solver="eigsh", scale_factor = 1)
+Sensitivity1.GlobalSecondOrderShapeSensitivity(EigenModeNo = 2)
+
 print(Sensitivity1.NodeYSensitivity(NodeNumber=1, scale=0.01))
 print(Sensitivity1.NodeYSensitivity(NodeNumber=10, scale=0.01))
 print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
@@ -97,9 +100,9 @@ print("Force Vector",Model1.ForceVector())
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #print(MemberRes1.MemberForceLocal(1, All = True))
 #print(SecondOrderMemberResponse1.MemberForceLocal(1, All = True))
-MemberRes1.PlotGlobalBMD(show_structure=True, scale_factor=2)
+#MemberRes1.PlotGlobalBMD(show_structure=True, scale_factor=2)
 #MemberRes1.PlotGlobalSFD(show_structure=True, scale_factor=2)
-SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True, scale_factor=2)
+#SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True, scale_factor=2)
 #SecondOrderMemberResponse1.PlotGlobalSFD(show_structure=True)
 #MemberRes1.PlotGlobalDeflection()
 #print(SecondOrderResponse1.BucklingEigenLoad())
@@ -115,4 +118,4 @@ SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True, scale_factor=2)
 #print(SecondOrderResponse1.MemberEigenMode(11, EigenModeNo = 1, scale_factor = 1000000))
 
 #print("EigenFrequency", DynamicResponse1.EigenFrequency())
-DynamicResponse1.PlotDynamicEigenMode(1)
+#DynamicResponse1.PlotDynamicEigenMode(1)

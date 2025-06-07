@@ -83,6 +83,9 @@ class Member():
         self.moment_of_inertia = Moment_of_Inertia
         self.Density = Density
 
+        #calculated properties
+        self.LBSensitivityBend = None
+
         #Additional for Hinge Joint
         if self.Start_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
             self.Start_Node.additional_dof_tita.append(300000 + self.Beam_Number*2-1)
