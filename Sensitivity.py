@@ -128,39 +128,25 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         return SM, GeoSM
     
     
-    def NodeXSensitivity(self,NodeNumber,scale, EigenModeNo = 1):
+    def NodeXSensitivity(self,NodeNumber,scale, Eigen = None, EigenModeNo = 1):
 
-        #unchanged system
-        NoMem = len(self.Members)
-        UnModifiedSM = self.GlobalStiffnessMatrixCondensed()
-
-        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
-        NorForList =[]
-        for i in range(NoMem):
-            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(-MemberForceLocal[0])
-        UnModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+        #unModified system
+        UnModifiedSM, UnModifiedGeoSM = self.compute_SM()
 
         #small perturbation
         for i in range(len(self.Points)):
             if self.Points[i].node_number == NodeNumber:
                 self.Points[i].xcoordinate += scale
         
-        #changed system
-        ModifiedSM = self.GlobalStiffnessMatrixCondensed()
-        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
-        NorForList =[]
-        for i in range(NoMem):
-            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(-MemberForceLocal[0])
-        ModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+        #Modified system
+        ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
-        Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
-        Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1]
+        if Eigen is None:
+            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        else:
+            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
+            Eigen_load = Eigen[1][EigenModeNo-1]
 
         d_KnodeX_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
         d_KgNodeX_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
@@ -169,45 +155,31 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
 
         return sensitivity
     
-    def NodeYSensitivity(self,NodeNumber,scale, EigenModeNo = 1):
-        #unchanged system
-        NoMem = len(self.Members)
-        UnModifiedSM = self.GlobalStiffnessMatrixCondensed()
-
-        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
-        NorForList =[]
-        for i in range(NoMem):
-            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(-MemberForceLocal[0])
-        UnModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+    def NodeYSensitivity(self,NodeNumber,scale, Eigen = None, EigenModeNo = 1):
+        #unModified system
+        UnModifiedSM, UnModifiedGeoSM = self.compute_SM()
 
         #small perturbation
         for i in range(len(self.Points)):
             if self.Points[i].node_number == NodeNumber:
                 self.Points[i].ycoordinate += scale
         
-        #changed system
-        ModifiedSM = self.GlobalStiffnessMatrixCondensed()
-        FirstOderDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        DisplacementDict = Computer.ModelDisplacementList_To_Dict(FirstOderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
-        NorForList =[]
-        for i in range(NoMem):
-            MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(i+1,DisplacementDict,self.Members)
-            MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("First_Order_Local_Stiffness_Matrix_1", i+1, self.Members, MemberDisplacement, self.Loads )
-            NorForList.append(-MemberForceLocal[0])
-        ModifiedGeoSM = self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+        #Modified system
+        ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
-        Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
-        Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1]
+        if Eigen is None:
+            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        else:
+            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
+            Eigen_load = Eigen[1][EigenModeNo-1]
 
         d_KnodeY_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
         d_KgNodeY_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
         sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KnodeY_ds - Eigen_load* d_KgNodeY_ds)), Eigen_mode)
         return sensitivity
     
-    def BeamBendingSensitivity(self,MemberNumber,scale, Eigen, EigenModeNo = 1):
+    def BeamBendingSensitivity(self,MemberNumber,scale, Eigen = None, EigenModeNo = 1):
 
         UnModifiedSM, UnModifiedGeoSM = self.compute_SM()
         
