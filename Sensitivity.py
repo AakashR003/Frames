@@ -127,23 +127,6 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
 
         return SM, GeoSM
     
-    def compute_sensitivity(self, UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo):
-        #Modified system
-        ModifiedSM, ModifiedGeoSM = self.compute_SM()
-
-        if Eigen is None:
-            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
-            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
-        else:
-            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
-            Eigen_load = Eigen[1][EigenModeNo-1]
-
-        d_K_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
-        d_Kg_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
-
-        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_K_ds - Eigen_load* d_Kg_ds)), Eigen_mode)
-        return sensitivity        
-    
     
     def NodeXSensitivity(self,NodeNumber,scale, Eigen = None, EigenModeNo = 1):
 
@@ -158,9 +141,17 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         #Modified system
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
-        # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
-        #update sensitivity
+        if Eigen is None:
+            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        else:
+            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
+            Eigen_load = Eigen[1][EigenModeNo-1]
+
+        d_KnodeX_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
+        d_KgNodeX_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
+
+        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KnodeX_ds - Eigen_load* d_KgNodeX_ds)), Eigen_mode)
 
         return sensitivity
     
@@ -176,9 +167,16 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         #Modified system
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
-        # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
-        #update sensitivity
+        if Eigen is None:
+            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        else:
+            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
+            Eigen_load = Eigen[1][EigenModeNo-1]
+
+        d_KnodeY_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
+        d_KgNodeY_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
+        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KnodeY_ds - Eigen_load* d_KgNodeY_ds)), Eigen_mode)
         return sensitivity
     
     def BeamBendingSensitivity(self,MemberNumber,scale, Eigen = None, EigenModeNo = 1):
@@ -193,57 +191,30 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         #Modified system
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
-        # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
-        #update sensitivity
+        if Eigen is None:
+            Eigen_mode = self.BucklingEigenLoad(Solver = "eigsh")[2][:,(EigenModeNo-1)]
+            Eigen_load = self.BucklingEigenLoad(Solver = "eigsh")[1][EigenModeNo-1]
+        else:
+            Eigen_mode = Eigen[2][:,(EigenModeNo-1)]
+            Eigen_load = Eigen[1][EigenModeNo-1]
+
+        d_KMemberBen_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
+        d_KgMemberBen_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
+
+        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_KMemberBen_ds - Eigen_load* d_KgMemberBen_ds)), Eigen_mode)
+        
         self.Members[MemberNumber-1].LBSensitivityBend = sensitivity
 
         return sensitivity
 
-    def BeamAxialSensitivity(self,MemberNumber,scale, Eigen = None, EigenModeNo = 1):
 
-        UnModifiedSM, UnModifiedGeoSM = self.compute_SM()
-        
-        #small perturbation
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].area += scale
-                
-        #Modified system
-        ModifiedSM, ModifiedGeoSM = self.compute_SM()
-
-        # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
-        #update sensitivity
-
-        return sensitivity
-    
-    def GlobalSecondOrderBendingSensitivity(self, EigenModeNo = 1):
+    def GlobalSecondOrderShapeSensitivity(self, EigenModeNo = 1):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
             self.BeamBendingSensitivity(i+1, 1e-10, Eigen = Eigen, EigenModeNo = EigenModeNo)
         sensitivity_values = [member.LBSensitivityBend for member in self.Members]
 
-        return sensitivity_values
-    
-    def GlobalSecondOrderAxialSensitivity(self, EigenModeNo = 1):
-        Eigen = self.BucklingEigenLoad(Solver = "eigsh")
-        for i in range(len(self.Members)):
-            # Calculate the sensitivity for each member
-            self.BeamBendingSensitivity(i+1, 1e-10, Eigen = Eigen, EigenModeNo = EigenModeNo)
-        sensitivity_values = [member.LBSensitivityBend for member in self.Members]
-
-        return sensitivity_values
-    
-
-
-    def PlotGlobalSecondOrderMemberSensitivity(self, Sensitivity_type = "Bending", EigenModeNo = 1):
-
-        if Sensitivity_type == "Bending":
-            sensitivity_values = self.GlobalSecondOrderBendingSensitivity(EigenModeNo = EigenModeNo)
-        if Sensitivity_type == "Axial":
-            sensitivity_values = self.GlobalSecondOrderAxialSensitivity(EigenModeNo = EigenModeNo)
         fig, ax = plt.subplots(figsize=(12, 8))
         computer_instance = Computer()
         computer_instance.PlotStructuralElements(ax, self.Members, self.Points, ShowNodeNumber=False, sensitivities= sensitivity_values)
@@ -253,6 +224,8 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         plt.show()
         return None
     
-    def PlotGlobalSecondOrderNodeSensitivity(self, EigenModeNo = 1):
+    def GlobalSizeSensitivity(self):
         return None
     
+    def PlotSensitivity(self):
+        return None
