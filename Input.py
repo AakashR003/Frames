@@ -7,6 +7,7 @@ from SecondOrderResponse import  SecondOrderGlobalResponse, SecondOrderMemberRes
 from DynamicResponse import DynamicGlobalResponse
 from Comparision import Comparision
 from Sensitivity import Senstivity, SecondOrderSensitivity
+from Optimization import SizeOptimization
 from FiniteElementDivisor import divide_into_finite_elements
 from Functions import print_class_Objects
 
@@ -45,7 +46,7 @@ NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Member
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 20)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 5)
 
 
 #main Model part - Main mode part includes sub model part
@@ -58,6 +59,7 @@ SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members 
 Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberResponse1)
 DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads = Loads)
+SizeOpt1 = SizeOptimization(Points=Points, Members=Members, Loads=Loads)
 
 
 
@@ -65,16 +67,12 @@ Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads 
 Model1.PlotGlobalModel()
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 2, Solver="eigsh", scale_factor = 1)
 Sensitivity1.PlotGlobalSecondOrderMemberSensitivity(EigenModeNo = 1)
+SizeOpt1.ACSecondOderAxialOptimization()
 
-print(Sensitivity1.NodeYSensitivity(NodeNumber=1, scale=0.01))
-print(Sensitivity1.NodeYSensitivity(NodeNumber=10, scale=0.01))
-print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-print("unconstrained dof",Model1.UnConstrainedDoF())
-print("constrained dof",Model1.ConstrainedDoF())
 
-print("dof number",Members[1].DoFNumber())
-print("dof number",Members[2].DoFNumber())
-print("Force Vector",Model1.ForceVector())
+#print("dof number",Members[1].DoFNumber())
+#print("dof number",Members[2].DoFNumber())
+#print("Force Vector",Model1.ForceVector())
 
 
 #MemberRes1.PlotMemberBMD(2)
