@@ -227,5 +227,4 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
     def GlobalSizeSensitivity(self):
         return None
     
-    def PlotSensitivity(self):
-        return None
+<<<<<<< EigenSensitivityImplementation
