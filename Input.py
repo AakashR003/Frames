@@ -64,7 +64,7 @@ Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads 
 
 Model1.PlotGlobalModel()
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 2, Solver="eigsh", scale_factor = 1)
-Sensitivity1.GlobalSecondOrderShapeSensitivity(EigenModeNo = 1)
+Sensitivity1.PlotGlobalSecondOrderMemberSensitivity(EigenModeNo = 1)
 
 print(Sensitivity1.NodeYSensitivity(NodeNumber=1, scale=0.01))
 print(Sensitivity1.NodeYSensitivity(NodeNumber=10, scale=0.01))
