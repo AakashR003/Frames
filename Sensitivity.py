@@ -58,49 +58,71 @@ class Senstivity(FirstOrderGlobalResponse):
 
         return sensitivity
     
-    def NodeXSensitivity(self,NodeNumber,scale):
+    def NodeXSensitivity(self,NodeNumber,scale, displacement_vector=None):
 
+        if displacement_vector is None:
+            displacement_vector = self.DisplacementVector()
         UnMOdifiedSM = self.GlobalStiffnessMatrixCondensed()
         for i in range(len(self.Points)):
             if self.Points[i].node_number == NodeNumber:
                 self.Points[i].xcoordinate += scale
         
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
-        sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
+        d_NodeX_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
+        sensitivity = np.dot(np.dot(np.transpose(displacement_vector),d_NodeX_ds),displacement_vector)
+        print("Node X Sensitivity", self.Points[i].NodeXSensitivity)
+        self.Points[i].NodeXSensitivity = sensitivity
 
         return sensitivity
     
-    def NodeYSensitivity(self,NodeNumber,scale):
+    def NodeYSensitivity(self,NodeNumber,scale, displacement_vector=None):
         
+        if displacement_vector is None:
+            displacement_vector = self.DisplacementVector()
         UnMOdifiedSM = self.GlobalStiffnessMatrixCondensed()
         for i in range(len(self.Points)):
             if self.Points[i].node_number == NodeNumber:
                 self.Points[i].ycoordinate += scale
         
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
-        d_AxialStiffness_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
-        sensitivity = np.dot(np.dot(np.transpose(self.DisplacementVector()),d_AxialStiffness_ds),self.DisplacementVector())
+        d_NodeY_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
+        sensitivity = np.dot(np.dot(np.transpose(displacement_vector),d_NodeY_ds),displacement_vector)
+        self.Points[i].NodeYSensitivity = sensitivity
 
         return sensitivity
-    
-    def GlobalShapeSensitivity(self,SensitivityType):
-        return None
     
     def GlobalSizeSensitivity(self,SensitivityType):
         sensitivities = []
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
             if SensitivityType == "Axial":
-                sensitivity = self.AxialMemberSensitivity(i+1, 1e-6)  # Using a small scale factor 
+                sensitivity = self.AxialMemberSensitivity(i+1, 1e-4)  # Using a small scale factor 
             elif SensitivityType == "Bending":
-                sensitivity = self.BendingMemberSensitivity(i+1, 1e-6)  # Using a small scale factor 
+                sensitivity = self.BendingMemberSensitivity(i+1, 1e-10)  # Using a small scale factor 
             elif SensitivityType == "Material":
                 sensitivity = self.MaterialSensitivity(i+1, 1e-6)  # Using a small scale factor 
             else:
                 raise ValueError("Unsupported SensitivityType. Currently, only 'Bending' is supported.")
             sensitivities.append(sensitivity)
         return sensitivities
+    
+    def GlobalNodeXSensitivity(self):
+        
+        displacement_vector = self.DisplacementVector()
+        for i in range(len(self.Points)):
+            # Calculate the sensitivity for each node
+            self.NodeXSensitivity(i+1, 1e-3, displacement_vector=displacement_vector)
+        sensitivity_values = {node.node_number: node.NodeXSensitivity for node in self.Points}
+        return sensitivity_values
+    
+    def GlobalNodeYSensitivity(self):
+    
+        displacement_vector = self.DisplacementVector()
+        for i in range(len(self.Points)):
+            # Calculate the sensitivity for each node
+            self.NodeYSensitivity(i+1, 1e-3, displacement_vector =  displacement_vector)
+        sensitivity_values = {node.node_number: node.NodeYSensitivity for node in self.Points}
+        return sensitivity_values
     
     def PlotSensitivity(self,SensitivityType):
         sensitivities = self.GlobalSizeSensitivity(SensitivityType)
@@ -244,8 +266,8 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Points)):
             # Calculate the sensitivity for each member
-            self.NodeXSensitivity(i+1, 1e-2, Eigen = Eigen, EigenModeNo = EigenModeNo)
-        sensitivity_values = [node.LBNodeXSensitivity for node in self.Points]
+            self.NodeXSensitivity(i+1, 1e-3, Eigen = Eigen, EigenModeNo = EigenModeNo)
+        sensitivity_values = {node.node_number: node.LBNodeXSensitivity for node in self.Points}
 
         print("Node X Sensitivity", sensitivity_values)
 
@@ -255,8 +277,10 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Points)):
             # Calculate the sensitivity for each member
-            self.NodeYSensitivity(i+1, 1e-2, Eigen = Eigen, EigenModeNo = EigenModeNo)
-        sensitivity_values = [node.LBNodeYSensitivity for node in self.Points]
+            self.NodeYSensitivity(i+1, 1e-3, Eigen = Eigen, EigenModeNo = EigenModeNo)
+        sensitivity_values = {node.node_number: node.LBNodeYSensitivity for node in self.Points}
+
+        print("Node Y Sensitivity", sensitivity_values)
 
         return sensitivity_values
     

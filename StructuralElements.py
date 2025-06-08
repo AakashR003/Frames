@@ -16,8 +16,12 @@ class Node():
         self.support_condition = Support_Condition
         self.additional_dof_tita=[]
 
+        self.NodeXSensitivity = None
+        self.NodeYSensitivity = None
         self.LBNodeXSensitivity = None
         self.LBNodeYSensitivity = None
+        
+
 
         if self.support_condition in ["Hinged Support", "Fixed Support", "Rigid Joint", "Roller in X-plane", "Roller in Y-plane"]:
             self.dof_x=(self.node_number)*3-2
@@ -49,6 +53,26 @@ class Node():
     def DoF(self):
         self.check1 = [self.dof_x, self.dof_y, self.dof_tita]    
         return [self.dof_x, self.dof_y, self.dof_tita]
+    
+    def RestrainedDOF(self):
+        if self.support_condition == "Hinged Support":
+            return [True, True, False]
+        
+        elif self.support_condition == "Fixed Support":
+            return [True, True, True]
+        
+        elif self.support_condition == "Rigid Joint":
+            return [False, False, False]
+        
+        elif self.support_condition == "Roller in X-plane":
+            return [False, True, False]
+        
+        elif self.support_condition == "Roller in Y-plane":
+            return [True, False, False]
+
+        else:
+            raise ValueError(f"Unsupported support condition: '{self.support_condition}'")
+        
 
 
 class Couple_Nodes():
