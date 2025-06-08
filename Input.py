@@ -7,7 +7,7 @@ from SecondOrderResponse import  SecondOrderGlobalResponse, SecondOrderMemberRes
 from DynamicResponse import DynamicGlobalResponse
 from Comparision import Comparision
 from Sensitivity import Senstivity, SecondOrderSensitivity
-from Optimization import SizeOptimization
+from Optimization import SizeOptimization, ShapeOptimization
 from FiniteElementDivisor import divide_into_finite_elements
 from Functions import print_class_Objects
 
@@ -33,6 +33,7 @@ Members = [
 Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=4, Start_Node=Points[0], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 ] # square cross section - 0.3 x 0.3, units N, m
 
 
@@ -46,7 +47,7 @@ NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Member
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 5)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 15)
 
 
 #main Model part - Main mode part includes sub model part
@@ -59,15 +60,16 @@ SecondOrderMemberResponse1 = SecondOrderMemberResponse(Points = Points, Members 
 Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberResponse1)
 DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads = Loads)
-SizeOpt1 = SizeOptimization(Points=Points, Members=Members, Loads=Loads)
-
+#SizeOpt1 = SizeOptimization(Points=Points, Members=Members, Loads=Loads)
+ShapeOpt1 = ShapeOptimization(Points=Points, Members=Members, Loads=Loads)
 
 
 
 Model1.PlotGlobalModel()
-SecondOrderResponse1.PlotEigenMode(EigenModeNo = 2, Solver="eigsh", scale_factor = 1)
-Sensitivity1.PlotGlobalSecondOrderMemberSensitivity(EigenModeNo = 1)
-SizeOpt1.ACSecondOderAxialOptimization()
+SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, Solver="eigsh", scale_factor = 1)
+#Sensitivity1.PlotGlobalSecondOrderMemberSensitivity(EigenModeNo = 1)
+#SizeOpt1.ACSecondOderAxialOptimization()
+ShapeOpt1.SecondOderNodeOptimization()
 
 
 #print("dof number",Members[1].DoFNumber())

@@ -161,6 +161,12 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         # Compute the sensitivity
         sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
         #update sensitivity
+        self.Points[NodeNumber-1].LBNodeXSensitivity = sensitivity
+
+        #cancell small perturbation
+        for i in range(len(self.Points)):
+            if self.Points[i].node_number == NodeNumber:
+                self.Points[i].xcoordinate -= scale
 
         return sensitivity
     
@@ -179,6 +185,12 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         # Compute the sensitivity
         sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
         #update sensitivity
+        self.Points[NodeNumber-1].LBNodeYSensitivity = sensitivity
+
+        #Cancell small perturbation
+        for i in range(len(self.Points)):
+            if self.Points[i].node_number == NodeNumber:
+                self.Points[i].ycoordinate -= scale
         return sensitivity
     
     def BeamBendingSensitivity(self,MemberNumber,scale, Eigen = None, EigenModeNo = 1):
@@ -198,6 +210,10 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         #update sensitivity
         self.Members[MemberNumber-1].LBSensitivityBend = sensitivity
 
+        #cancell small perturbation
+        for i in range(len(self.Members)):
+            if i == MemberNumber-1:
+                self.Members[i].moment_of_inertia -= scale
         return sensitivity
 
     def BeamAxialSensitivity(self,MemberNumber,scale, Eigen = None, EigenModeNo = 1):
@@ -215,8 +231,34 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         # Compute the sensitivity
         sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
         #update sensitivity
+        self.Members[MemberNumber-1].LBSensitivityAxial = sensitivity   
+        
+        #cancell small perturbation
+        for i in range(len(self.Members)):
+            if i == MemberNumber-1:
+                self.Members[i].area -= scale
 
         return sensitivity
+    
+    def GlobalSecondOrderNodeXSensitivity(self, EigenModeNo = 1):
+        Eigen = self.BucklingEigenLoad(Solver = "eigsh")
+        for i in range(len(self.Points)):
+            # Calculate the sensitivity for each member
+            self.NodeXSensitivity(i+1, 1e-2, Eigen = Eigen, EigenModeNo = EigenModeNo)
+        sensitivity_values = [node.LBNodeXSensitivity for node in self.Points]
+
+        print("Node X Sensitivity", sensitivity_values)
+
+        return sensitivity_values
+    
+    def GlobalSecondOrderNodeYSensitivity(self, EigenModeNo = 1):
+        Eigen = self.BucklingEigenLoad(Solver = "eigsh")
+        for i in range(len(self.Points)):
+            # Calculate the sensitivity for each member
+            self.NodeYSensitivity(i+1, 1e-2, Eigen = Eigen, EigenModeNo = EigenModeNo)
+        sensitivity_values = [node.LBNodeYSensitivity for node in self.Points]
+
+        return sensitivity_values
     
     def GlobalSecondOrderBendingSensitivity(self, EigenModeNo = 1):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
@@ -231,7 +273,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
-            self.BeamBendingSensitivity(i+1, 1e-10, Eigen = Eigen, EigenModeNo = EigenModeNo)
+            self.BeamBendingSensitivity(i+1, 1e-3, Eigen = Eigen, EigenModeNo = EigenModeNo)
         sensitivity_values = [member.LBSensitivityBend for member in self.Members]
 
         return sensitivity_values

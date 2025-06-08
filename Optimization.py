@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 
 try:
     from .Model import Model
@@ -10,12 +11,35 @@ except:
     from Computer import Computer
     from Sensitivity import SecondOrderSensitivity
 
+class ShapeOptimization(SecondOrderSensitivity):
+
+    def SecondOderNodeOptimization(self, iterations = 8, stepsize = 0.001):
+
+        for i in range(iterations):
+            print("Iteration", i, "Objective",self.BucklingEigenLoad(Solver = "eigsh")[0])
+            #sensitivity analysis
+            sensitivity_values_x = self.GlobalSecondOrderNodeXSensitivity(EigenModeNo = 1)
+            sensitivity_values_y = self.GlobalSecondOrderNodeYSensitivity(EigenModeNo = 1)
+            #Size update
+            for i in range (len(self.Points)):
+                self.Points[i].xcoordinate = self.Points[i].xcoordinate - stepsize * sensitivity_values_x[i]
+                self.Points[i].ycoordinate = self.Points[i].ycoordinate - stepsize * sensitivity_values_y[i]
+
+        fig, ax = plt.subplots(figsize=(12, 8))
+        computer_instance = Computer()
+        computer_instance.PlotStructuralElements(ax, self.Members, self.Points, ShowNodeNumber=False)
+                
+        ax.set_title(f"Buckling Eigenmode Shape Optimized", fontsize=16)
+        ax.axis('equal')
+        plt.show()
+
+        return None
+        
+
 class SizeOptimization(SecondOrderSensitivity):
 
-    def SecondOderBendingOptimization(self):
-        pass
 
-    def SecondOderAxialOptimization(self, iterations = 8, stepsize = 1, type = "Bending"):
+    def SecondOrderBendingOptimization(self, iterations = 8, stepsize = 1, type = "Bending"):
         
         #No constraint added for volume
         for i in range(iterations):
@@ -27,9 +51,9 @@ class SizeOptimization(SecondOrderSensitivity):
                 self.Members[i].moment_of_inertia = self.Members[i].moment_of_inertia - stepsize * sensitivity_values[i]
 
         
-        pass
+        return None
 
-    def ACSecondOderAxialOptimization(self, iterations = 8, stepsize = 3, type = "Bending"):
+    def ACSecondOrderBendingOptimization(self, iterations = 8, stepsize = 3, type = "Bending"):
         
         #Aritificially volume constraint added
 
@@ -56,4 +80,4 @@ class SizeOptimization(SecondOrderSensitivity):
                 member.moment_of_inertia = member.moment_of_inertia- change
             
         
-        pass
+        return None
