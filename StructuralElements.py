@@ -16,6 +16,9 @@ class Node():
         self.support_condition = Support_Condition
         self.additional_dof_tita=[]
 
+        self.LBNodeXSensitivity = None
+        self.LBNodeYSensitivity = None
+
         if self.support_condition in ["Hinged Support", "Fixed Support", "Rigid Joint", "Roller in X-plane", "Roller in Y-plane"]:
             self.dof_x=(self.node_number)*3-2
             self.dof_y=(self.node_number)*3-1
@@ -85,6 +88,7 @@ class Member():
 
         #calculated properties
         self.LBSensitivityBend = None
+        self.LBSensitivityAxial = None
 
         #Additional for Hinge Joint
         if self.Start_Node.support_condition in ["Hinge Joint", "Hinged Joint Support", "Roller in X-plane-Hinge"]:
