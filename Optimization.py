@@ -86,20 +86,26 @@ class SecondOrderSizeOptimization(SecondOrderSensitivity):
     
 class ShapeOptimization(Senstivity):
     
-    def NodeOptimization(self, iterations = 8, stepsize = 0.02):
-
+    def NodeOptimization(self, iterations = 8, stepsize = 100000):
+        shape_update = {"X": [], "Y": []}
         for i in range(iterations):
             print("Iteration", i, "Objective")
             #sensitivity analysis
             self.GlobalNodeXSensitivity()
             self.GlobalNodeYSensitivity()
-            #Size update
+
+            #Node update
+            NodeX_update = []
+            NodeY_update = []
             for i in range (len(self.Points)):
                 if self.Points[i].RestrainedDOF()[0] == False:
                     self.Points[i].xcoordinate = self.Points[i].xcoordinate + stepsize * self.Points[i].NodeXSensitivity
                 if self.Points[i].RestrainedDOF()[1] == False:
                     self.Points[i].ycoordinate = self.Points[i].ycoordinate + stepsize * self.Points[i].NodeYSensitivity
-
+                NodeX_update.append(self.Points[i].xcoordinate)
+                NodeY_update.append(self.Points[i].ycoordinate)
+            shape_update["X"].append(NodeX_update)
+            shape_update["Y"].append(NodeY_update)
         fig, ax = plt.subplots(figsize=(12, 8))
         computer_instance = Computer()
         computer_instance.PlotStructuralElements(ax, self.Members, self.Points, ShowNodeNumber=False)

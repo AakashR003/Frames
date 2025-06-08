@@ -70,8 +70,7 @@ class Senstivity(FirstOrderGlobalResponse):
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
         d_NodeX_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(displacement_vector),d_NodeX_ds),displacement_vector)
-        print("Node X Sensitivity", self.Points[i].NodeXSensitivity)
-        self.Points[i].NodeXSensitivity = sensitivity
+        self.Points[NodeNumber-1].NodeXSensitivity = sensitivity
 
         return sensitivity
     
@@ -87,7 +86,7 @@ class Senstivity(FirstOrderGlobalResponse):
         ModifiedSM= self.GlobalStiffnessMatrixCondensed()
         d_NodeY_ds = (np.array(ModifiedSM) - np.array(UnMOdifiedSM))
         sensitivity = np.dot(np.dot(np.transpose(displacement_vector),d_NodeY_ds),displacement_vector)
-        self.Points[i].NodeYSensitivity = sensitivity
+        self.Points[NodeNumber-1].NodeYSensitivity = sensitivity
 
         return sensitivity
     
@@ -113,6 +112,7 @@ class Senstivity(FirstOrderGlobalResponse):
             # Calculate the sensitivity for each node
             self.NodeXSensitivity(i+1, 1e-3, displacement_vector=displacement_vector)
         sensitivity_values = {node.node_number: node.NodeXSensitivity for node in self.Points}
+        print("Node X Sensitivity", sensitivity_values)
         return sensitivity_values
     
     def GlobalNodeYSensitivity(self):
@@ -122,6 +122,7 @@ class Senstivity(FirstOrderGlobalResponse):
             # Calculate the sensitivity for each node
             self.NodeYSensitivity(i+1, 1e-3, displacement_vector =  displacement_vector)
         sensitivity_values = {node.node_number: node.NodeYSensitivity for node in self.Points}
+        print("Node Y Sensitivity", sensitivity_values)
         return sensitivity_values
     
     def PlotSensitivity(self,SensitivityType):

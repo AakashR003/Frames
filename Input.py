@@ -19,8 +19,8 @@ config.set_FEDivision(1000)
 Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
 #Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Hinge Joint"),
-Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Roller in Y-plane"),
-Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Roller in Y-plane"),
+Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Hinged Support"),
+Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Hinged Support"),
 Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Fixed Support")
 ]
 
@@ -49,7 +49,7 @@ NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Member
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 10)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 15)
 
 
 #main Model part - Main mode part includes sub model part
@@ -71,9 +71,10 @@ ShapeOpt1 = ShapeOptimization(Points=Points, Members=Members, Loads=Loads)
 Model1.PlotGlobalModel()
 #Eigen_Mode = 1
 #SecondOrderResponse1.PlotEigenMode(EigenModeNo = Eigen_Mode, Solver="eigsh", scale_factor = 1)
-Sensitivity.GlobalNodeXSensitivity()
+#Sensitivity.GlobalNodeXSensitivity()
+#Sensitivity1.GlobalSecondOrderNodeXSensitivity()
 #SizeOpt1.ACSecondOderAxialOptimization()
-#ShapeOpt1.NodeOptimization()
+ShapeOpt1.NodeOptimization()
 
 
 #print("dof number",Members[1].DoFNumber())
