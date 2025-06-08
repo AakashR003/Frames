@@ -255,5 +255,3 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
     
     def PlotGlobalSecondOrderNodeSensitivity(self, EigenModeNo = 1):
         return None
-    
-    
