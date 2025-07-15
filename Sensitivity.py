@@ -150,7 +150,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
 
         return SM, GeoSM
     
-    def compute_sensitivity(self, UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo):
+    def compute_sensitivity(self, UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo, MemberNumber):
         #Modified system
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
@@ -164,7 +164,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         d_K_ds = (np.array(ModifiedSM) - np.array(UnModifiedSM))
         d_Kg_ds = (np.array(ModifiedGeoSM) - np.array(UnModifiedGeoSM))
 
-        sensitivity = np.dot(np.dot(np.transpose(Eigen_mode),(d_K_ds - Eigen_load* d_Kg_ds)), Eigen_mode)
+        sensitivity = (np.dot(np.dot(np.transpose(Eigen_mode),(d_K_ds - Eigen_load* d_Kg_ds)), Eigen_mode))/(np.dot(np.dot(np.transpose(Eigen_mode),np.array(UnModifiedGeoSM)), Eigen_load))
         return sensitivity        
     
     
@@ -182,7 +182,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
         # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
+        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo, MemberNumber)
         #update sensitivity
         self.Points[NodeNumber-1].LBNodeXSensitivity = sensitivity
 
@@ -206,7 +206,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
         # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
+        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo, MemberNumber)
         #update sensitivity
         self.Points[NodeNumber-1].LBNodeYSensitivity = sensitivity
 
@@ -229,7 +229,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
         # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
+        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo, MemberNumber)
         #update sensitivity
         self.Members[MemberNumber-1].LBSensitivityBend = sensitivity
 
@@ -252,7 +252,7 @@ class SecondOrderSensitivity(SecondOrderGlobalResponse):
         ModifiedSM, ModifiedGeoSM = self.compute_SM()
 
         # Compute the sensitivity
-        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo)
+        sensitivity = self.compute_sensitivity(UnModifiedSM, UnModifiedGeoSM, ModifiedSM, ModifiedGeoSM, Eigen, EigenModeNo, MemberNumber)
         #update sensitivity
         self.Members[MemberNumber-1].LBSensitivityAxial = sensitivity   
         
