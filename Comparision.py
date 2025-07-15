@@ -318,3 +318,22 @@ class Comparision():
         ax.axis('equal')
         plt.show()
 
+    def PlotLoadDisplacementCurveComparison(self, NodeNumber = 1, Direction = "x", division = 20):
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.set_title("Load-Displacement Curve Comparison")
+        
+        
+        loadFactor = self.Model2.BucklingEigenLoad()[0] * 0.8
+        LoadTrace1, DisplacementTrace1 = self.MainModel.LoadDisplacementTrace(NodeNumber, Direction, loadFactor, division)
+        LoadTrace2, DisplacementTrace2 = self.Model2.SecondOrderLoadDisplacementTrace(NodeNumber, Direction, loadFactor, division)
+        
+        
+        ax.plot(DisplacementTrace1, LoadTrace1, marker='o', linestyle='-', color='blue')
+        ax.plot(DisplacementTrace2, LoadTrace2, marker='o', linestyle='-', color='orange')
+        
+        ax.set_xlabel('Displacement')
+        ax.set_ylabel('Load Factor')
+        ax.legend()
+        plt.grid()
+        plt.show()
+

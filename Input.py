@@ -32,12 +32,13 @@ Members = [
 Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=4, Start_Node=Points[0], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 ] # square cross section - 0.3 x 0.3, units N, m
 
 
 Loads = [
 #NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
-NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
+NeumanBC(type="PL", Magnitude=-156000, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
 #NeumanBC(type="NL", Magnitude=-10, AssignedTo="Node 2", Members = Members, Nodes = Points)
 ]
 
@@ -45,7 +46,7 @@ NeumanBC(type="PL", Magnitude=-10, Distance1= 2.5, AssignedTo="Member 2", Member
 
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 20)
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 5)
 
 
 #main Model part - Main mode part includes sub model part
@@ -63,18 +64,18 @@ Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads 
 
 
 Model1.PlotGlobalModel()
-SecondOrderResponse1.PlotEigenMode(EigenModeNo = 2, Solver="eigsh", scale_factor = 1)
-Sensitivity1.GlobalSecondOrderShapeSensitivity(EigenModeNo = 1)
+SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, Solver="eigsh", scale_factor = 1)
+#SecondOrderResponse1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 10, Direction = "y", LoadFactor = None, division =20)
+Comparision1.PlotLoadDisplacementCurveComparison(NodeNumber = 10, Direction = "y", division =20)
 
-print(Sensitivity1.NodeYSensitivity(NodeNumber=1, scale=0.01))
-print(Sensitivity1.NodeYSensitivity(NodeNumber=10, scale=0.01))
-print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-print("unconstrained dof",Model1.UnConstrainedDoF())
-print("constrained dof",Model1.ConstrainedDoF())
+print("Completed Necessary")
+print("Starting Additional")
+#print("unconstrained dof",Model1.UnConstrainedDoF())
+#print("constrained dof",Model1.ConstrainedDoF())
 
-print("dof number",Members[1].DoFNumber())
-print("dof number",Members[2].DoFNumber())
-print("Force Vector",Model1.ForceVector())
+#print("dof number",Members[1].DoFNumber())
+#print("dof number",Members[2].DoFNumber())
+#print("Force Vector",Model1.ForceVector())
 
 
 #MemberRes1.PlotMemberBMD(2)
@@ -85,8 +86,8 @@ print("Force Vector",Model1.ForceVector())
 #SecondOrderMemberResponse1.PlotMemberDeflection(1)
 #print(SecondOrderResponse1.BucklingEigenLoad())
 #SecondOrderMemberResponse1.PlotGlobalDeflection()
-#Comparision1.PlotGlobalDeflectionComparison(scale_factor = 1)
-#print(SecondOrderResponse1.BucklingEigenLoad()[0])
+Comparision1.PlotGlobalDeflectionComparison(scale_factor = 1)
+print(SecondOrderResponse1.BucklingEigenLoad()[0])
 
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)

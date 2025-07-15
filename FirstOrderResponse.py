@@ -52,7 +52,60 @@ class FirstOrderGlobalResponse(Model):
         
         #force dict formation
         return SupportForces
+    
+    def LoadDisplacementTrace(self, NodeNumber = 1, Direction = "x", LoadFactor = None, division =20):
+        """
+        Calculates the load-displacement trace for a specific DOF.
+        If Load is None, it uses the critical load by buckling analysis.
+        Displacemeent is made as absolute value. hence direction information is not included
+        division: Number of points to calculate along the load path.
+        iteration_steps: Number of iterations for convergence.
+
+        """
+        
+        if LoadFactor is None:
+            LoadFactor = 1
+        
+        if Direction == "x":
+            DOFNumber = self.Points[NodeNumber-1].dof_x
+        elif Direction == "y":
+            DOFNumber = self.Points[NodeNumber-1].dof_y
+        elif Direction == "tita":
+            DOFNumber = self.Points[NodeNumber-1].dof_tita
+        
+        
+        LoadTrace = np.linspace(0.1, LoadFactor, division)
+        #LoadTrace = 0.1 + (LoadFactor - 0.1) * np.linspace(0, 1, division) ** 0.5 # Use for non-linear load
+        DisplacementTrace = []
+
+        for load in LoadTrace:
+            for i in range(len(self.Loads)):
+                self.Loads[i].Magnitude = self.Loads[i].Magnitude * load
+            displacement = self.DisplacementVectorDict()[str(DOFNumber)]
+            DisplacementTrace.append(abs(displacement))
+            for i in range(len(self.Loads)):
+                self.Loads[i].Magnitude = self.Loads[i].Magnitude / load
+        
+        return LoadTrace, DisplacementTrace
+
    
+    def PlotLoadDisplacementCurve(self, NodeNumber = 1, Direction = "x", LoadFactor = None, division = 20):
+        """
+        Plots the load-displacement curve for a specific DOF.
+        If Load is None, it uses the critical load by buckling analysis.
+        division: Number of points to calculate along the load path.
+        iteration_steps: Number of iterations for convergence.
+        """
+        
+        LoadTrace, DisplacementTrace = self.LoadDisplacementTrace(NodeNumber, Direction, LoadFactor, division)
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(DisplacementTrace, LoadTrace, marker='o', linestyle='-', color='blue')
+        plt.title(f"Load-Displacement Curve for Node {NodeNumber} in {Direction} Direction")
+        plt.xlabel("Displacement")
+        plt.ylabel("Load")
+        plt.grid(True)
+        plt.show()
 
 class FirstOrderNodalResponse(FirstOrderGlobalResponse):
     
