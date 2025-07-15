@@ -99,11 +99,15 @@ class SecondOrderGlobalResponse(Model):
         
         return SecondOrderDisplacement
     
-    def DisplacementVectorDict(self):
+    def DisplacementVectorDict(self, iteration_steps=5):
+
+        """ Returns a dictionary of displacements for each DOF."""
+
         self.DisplacementDict={}
+        displacement = self.DisplacementVector(iteration_steps)
         for i in range(len(self.TotalDoF())):
             if(i<(len(self.UnConstrainedDoF()))):
-                self.DisplacementDict[str(self.TotalDoF()[i])] = self.DisplacementVector(5)[i]
+                self.DisplacementDict[str(self.TotalDoF()[i])] = displacement[i]
             else:
                 self.DisplacementDict[str(self.TotalDoF()[i])]=0
         return self.DisplacementDict
@@ -121,6 +125,41 @@ class SecondOrderGlobalResponse(Model):
                 self.ForceVectorDict[str(self.TotalDoF()[i])] = 0
         
         return SupportForces
+    
+    def SecondOrderLoadDisplacementTrace(self, NodeNumber = 1, Direction = "x", LoadFactor = None, division =20, iteration_steps = 5):
+        """
+        Calculates the load-displacement trace for a specific DOF.
+        If Load is None, it uses the critical load by buckling analysis.
+        Displacemeent is made as absolute value. hence direction information is not included
+        division: Number of points to calculate along the load path.
+        iteration_steps: Number of iterations for convergence.
+
+        """
+        
+        if LoadFactor is None:
+            LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        
+        if Direction == "x":
+            DOFNumber = self.Points[NodeNumber-1].dof_x
+        elif Direction == "y":
+            DOFNumber = self.Points[NodeNumber-1].dof_y
+        elif Direction == "tita":
+            DOFNumber = self.Points[NodeNumber-1].dof_tita
+        
+        
+        LoadTrace = np.linspace(0.1, LoadFactor, division)
+        #LoadTrace = 0.1 + (LoadFactor - 0.1) * np.linspace(0, 1, division) ** 0.5 # Use for non-linear load
+        DisplacementTrace = []
+
+        for load in LoadTrace:
+            for i in range(len(self.Loads)):
+                self.Loads[i].Magnitude = self.Loads[i].Magnitude * load
+            displacement = self.DisplacementVectorDict(iteration_steps)[str(DOFNumber)]
+            DisplacementTrace.append(abs(displacement))
+            for i in range(len(self.Loads)):
+                self.Loads[i].Magnitude = self.Loads[i].Magnitude / load
+        
+        return LoadTrace, DisplacementTrace
     
     def BucklingEigenLoad(self, Solver = False):
 
@@ -177,6 +216,24 @@ class SecondOrderGlobalResponse(Model):
         self.DeflectionPosition, BeamEigenVector = Computer.Linear_Interpolate_Displacements(EigenVectorLocal, length, FEDivision, scale_factor)
         
         return BeamEigenVector
+    
+    def PlotSecondOrderLoadDisplacementCurve(self, NodeNumber = 1, Direction = "x", LoadFactor = None, division = 20, iteration_steps = 5):
+        """
+        Plots the load-displacement curve for a specific DOF.
+        If Load is None, it uses the critical load by buckling analysis.
+        division: Number of points to calculate along the load path.
+        iteration_steps: Number of iterations for convergence.
+        """
+        
+        LoadTrace, DisplacementTrace = self.SecondOrderLoadDisplacementTrace(NodeNumber, Direction, LoadFactor, division, iteration_steps)
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(DisplacementTrace, LoadTrace, marker='o', linestyle='-', color='blue')
+        plt.title(f"Load-Displacement Curve for Node {NodeNumber} in {Direction} Direction")
+        plt.xlabel("Displacement")
+        plt.ylabel("Load")
+        plt.grid(True)
+        plt.show()
 
     def PlotEigenMode(self, EigenModeNo = 1, scale_factor = 1, Solver ="eigsh", show_structure = True):
         fig, ax = plt.subplots(figsize=(12, 8))
