@@ -68,7 +68,7 @@ class SecondOrderGlobalResponse(Model):
             C1.append(R1)
         return C1
     
-    def DisplacementVector(self, iteration_steps):
+    def SecondOrderDisplacementVector(self, iteration_steps, ReturnSM = False):
 
         NoMem = len(self.Members)
 
@@ -97,14 +97,17 @@ class SecondOrderGlobalResponse(Model):
         self.NormalForceList = NorForList
         print("2nd order displacement computed")
         
+        if ReturnSM == True:
+            return self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+        
         return SecondOrderDisplacement
     
-    def DisplacementVectorDict(self, iteration_steps=5):
+    def SecondOrderDisplacementVectorDict(self, iteration_steps=5):
 
         """ Returns a dictionary of displacements for each DOF."""
 
         self.DisplacementDict={}
-        displacement = self.DisplacementVector(iteration_steps)
+        displacement = self.SecondOrderDisplacementVector(iteration_steps)
         for i in range(len(self.TotalDoF())):
             if(i<(len(self.UnConstrainedDoF()))):
                 self.DisplacementDict[str(self.TotalDoF()[i])] = displacement[i]
@@ -114,8 +117,8 @@ class SecondOrderGlobalResponse(Model):
     
     def SecondOrderSupportForcesVector(self):
 
-        #self.DisplacementVector(5)
-        SupportForces = np.dot(np.array(self.SecondOrderGlobalStiffnessMatrixCondensedA21(self.NormalForceList)),self.DisplacementVector(5))
+        #self.SecondOrderDisplacementVector(5)
+        SupportForces = np.dot(np.array(self.SecondOrderGlobalStiffnessMatrixCondensedA21(self.NormalForceList)),self.SecondOrderDisplacementVector(5))
         
         self.ForceVectorDict={}
         for i in range(len(self.TotalDoF())):
@@ -154,7 +157,7 @@ class SecondOrderGlobalResponse(Model):
         for load in LoadTrace:
             for i in range(len(self.Loads)):
                 self.Loads[i].Magnitude = self.Loads[i].Magnitude * load
-            displacement = self.DisplacementVectorDict(iteration_steps)[str(DOFNumber)]
+            displacement = self.SecondOrderDisplacementVectorDict(iteration_steps)[str(DOFNumber)]
             DisplacementTrace.append(abs(displacement))
             for i in range(len(self.Loads)):
                 self.Loads[i].Magnitude = self.Loads[i].Magnitude / load
@@ -308,19 +311,19 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
     
     def MemberDisplacement(self, MemberNumber):
         MemberNo = int(MemberNumber)
-        self.DisplacementVector(5)
-        MemberDisplacement = [self.DisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[0])],
-                             self.DisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[1])],
-                             self.DisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[2])],
-                             self.DisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[3])],
-                             self.DisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[4])],
-                             self.DisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[5])]]
+        self.SecondOrderDisplacementVector(5)
+        MemberDisplacement = [self.SecondOrderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[0])],
+                             self.SecondOrderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[1])],
+                             self.SecondOrderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[2])],
+                             self.SecondOrderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[3])],
+                             self.SecondOrderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[4])],
+                             self.SecondOrderDisplacementVectorDict()[str(self.Members[MemberNo-1].DoFNumber()[5])]]
         return MemberDisplacement
        
     def MemberForceLocal(self, MemberNumber, All = False):
         
         MemberNo = int(MemberNumber)
-        SecondOrderDisplacement = self.DisplacementVector(5)
+        SecondOrderDisplacement = self.SecondOrderDisplacementVector(5)
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
         MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,self.Members)
         MemberForceLocal = Computer.MemberDisplacement_To_ForceLocal("Second_Order_Local_Stiffness_Matrix_1", MemberNo, self.Members, MemberDisplacement, self.Loads, self.NormalForceList[MemberNo-1] )
@@ -337,7 +340,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
 
         """
         MemberNo = int(MemberNumber)
-        SecondOrderDisplacement = self.DisplacementVector(5)
+        SecondOrderDisplacement = self.SecondOrderDisplacementVector(5)
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(SecondOrderDisplacement,self.UnConstrainedDoF,self.TotalDoF)
         MemberDisplacement = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber,DisplacementDict,self.Members)
 
@@ -427,7 +430,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
         iteration_steps = 5
 
         if DisplacementDict == None:
-            Displacement = self.DisplacementVector(iteration_steps)
+            Displacement = self.SecondOrderDisplacementVector(iteration_steps)
             DisplacementDict = Computer.ModelDisplacementList_To_Dict(Displacement, self.UnConstrainedDoF, self.TotalDoF)
 
         MemberDisplacementGlobal = Computer.ModelDisplacement_To_MemberDisplacement(MemberNumber, DisplacementDict, self.Members)
@@ -682,7 +685,7 @@ class SecondOrderMemberResponse(SecondOrderGlobalResponse):
             computer_instance.PlotStructuralElements(ax,self.Members, self.Points, ShowNodeNumber = False)
         
         iteration_steps = 5
-        DisplacementList = self.DisplacementVector(5)
+        DisplacementList = self.SecondOrderDisplacementVector(5)
         DisplacementDict = Computer.ModelDisplacementList_To_Dict(DisplacementList, self.UnConstrainedDoF, self.TotalDoF)
 
 

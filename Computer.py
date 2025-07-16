@@ -4,7 +4,7 @@ import numpy as np
 from decimal import Decimal, getcontext
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
-from scipy.sparse.linalg import eigsh, cg
+from scipy.sparse.linalg import eigsh, cg, eigs
 from scipy.linalg import eig
 #from sksparse.cholmod import cholesky # Uncomment if using sksparse for Cholesky factorization
 
@@ -56,6 +56,22 @@ class Computer():
     def GlobalStifnessMatrixA21():
         return None
     
+    def FlexibilityMatrixSolver(StiffnessMatrix):
+        """
+        Computes the flexibility matrix as the inverse of the stiffness matrix.
+        """
+        # Ensure the stiffness matrix is a NumPy array
+        stiffness_matrix = np.array(StiffnessMatrix)
+        
+        # Check if the matrix is square and invertible
+        if stiffness_matrix.shape[0] != stiffness_matrix.shape[1]:
+            raise ValueError("Stiffness matrix must be square.")
+        
+        # Compute the flexibility matrix
+        flexibility_matrix = np.linalg.inv(stiffness_matrix)
+        
+        return flexibility_matrix
+    
     def DirectInverseDisplacementSolver(StiffnessMatrix, ForceVector):
         
         Displacement = np.dot((np.linalg.inv(np.array(StiffnessMatrix))),ForceVector)
@@ -74,6 +90,22 @@ class Computer():
     
     def ConjugateGradientDisplacementSolver():
         return None
+    
+    def DirectDisplacementSolver(FlexibilityMatrix, ForceVector):
+        """
+        Computes the displacement vector by multiplying the flexibility matrix with the force vector.
+        """
+        # Ensure the flexibility matrix is a NumPy array
+        flexibility_matrix = np.array(FlexibilityMatrix)
+        
+        # Check if the matrix is square and compatible with the force vector
+        if flexibility_matrix.shape[0] != flexibility_matrix.shape[1]:
+            raise ValueError("Flexibility matrix must be square.")
+        
+        # Compute the displacement vector
+        Displacement = np.dot(flexibility_matrix, ForceVector)
+        
+        return Displacement
 
     def DeterminantSolver(StiffnessMatrix):
 
@@ -118,7 +150,56 @@ class Computer():
                 K[j, i:] = [K[j, k] - factor * K[i, k] for k in range(i, n)]
 
         return +det  # unary plus rounds to current context precision
-
+    
+    def EigenSolver(Matrix, AdditionalMatrix = None, Solver = "eigs", k=10):
+        if Solver == "eigs":
+            x, EigenMode = eigs(
+                                Matrix, 
+                                M=AdditionalMatrix, 
+                                k=k, 
+                                which='SM', 
+                                maxiter=10000,    # Increase iterations
+                                tol=1e-6,         # Loosen tolerance
+                                ncv=50            # More Lanczos vectors
+                                )
+        
+        if Solver == "eigsh":
+            x, EigenMode = eigsh(
+                                    Matrix, 
+                                    M=AdditionalMatrix, 
+                                    k=k, 
+                                    sigma=1e-6,       # Shift near zero (critical for stability)
+                                    which='LM',       # Largest magnitude after shift-invert
+                                    mode='buckling',  # For buckling problems (A x = λ M x)
+                                    maxiter=10000,
+                                    tol=1e-6,
+                                    ncv=50
+                                )
+        return EigenMode.real
+    
+    def OrthogonalSolver (Matrix, SMatrix, Back = False):
+        
+        if Back == False:
+            if Matrix.ndim == 2 and Matrix.shape[1] == 1:
+                return np.dot(np.transpose(Computer.EigenSolver(SMatrix, k = len(SMatrix))), Matrix)
+            
+            elif Matrix.ndim == 1:
+                return np.dot(np.transpose(Computer.EigenSolver(SMatrix, k = len(SMatrix))), np.transpose(Matrix))
+            
+            else:       
+                return np.dot(np.dot(np.transpose(Computer.EigenSolver(SMatrix, k = len(SMatrix))), Matrix), Computer.EigenSolver(SMatrix, k = len(SMatrix)))
+        
+        else:
+            print("Back is True")
+            if Matrix.ndim == 2 and Matrix.shape[1] == 1:
+                return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), Matrix)
+            
+            elif Matrix.ndim == 1:
+                return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), np.transpose(Matrix))
+            
+            else:    # need to check this   
+                return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), np.dot(Matrix, Computer.EigenSolver(SMatrix, k = len(SMatrix))))
+            
     def SupportForceVector():
         return None
 

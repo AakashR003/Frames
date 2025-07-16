@@ -234,7 +234,7 @@ class Comparision():
         DisplacementDict1 = Computer.ModelDisplacementList_To_Dict(DisplacementList1, self.MainModel.UnConstrainedDoF, self.MainModel.TotalDoF)
 
         iteration_steps = 5
-        DisplacementList2 = self.Model2.DisplacementVector(iteration_steps)
+        DisplacementList2 = self.Model2.SecondOrderDisplacementVector(iteration_steps)
         DisplacementDict2 = Computer.ModelDisplacementList_To_Dict(DisplacementList2, self.Model2.UnConstrainedDoF, self.Model2.TotalDoF)
 
 
