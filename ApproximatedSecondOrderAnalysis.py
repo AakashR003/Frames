@@ -4,12 +4,17 @@ import matplotlib.pyplot as plt
 
 try:
     from .SecondOrderResponse import SecondOrderMemberResponse
+    from .FirstOrderResponse import FirstOrderGlobalResponse
+
     from .Computer import Computer
 except:
     from SecondOrderResponse import SecondOrderMemberResponse
+    from FirstOrderResponse import FirstOrderGlobalResponse
+
     from Computer import Computer
 
 class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
+
     def _check_orthogonal_matrix(self, matrix, name="Orthogonal matrix"):
         """
         Checks that each row of the matrix has only one non-zero element (approximate zero: abs(x) < 1e-3).
@@ -24,7 +29,7 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
                 pass
                 #print(f"{name} row {i} has {non_zero_count} non-zero elements (rounded to 2 decimals): {row}")
                 #raise RuntimeError(f"{name} row {i} does not have exactly one non-zero element (rounded to 2 decimals).")
-        print(f"{name} is orthogonal: each row has exactly one non-zero element (rounded to 2 decimals).")
+        #print(f"{name} is orthogonal: each row has exactly one non-zero element (rounded to 2 decimals).")
 
 
     def CalculateK2ndOrderMinusKLinear(self):
@@ -100,24 +105,6 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
         
         return Flexibility_modified
     
-    def CalculateApproximatedSecondOrderDisplacementVector(self):
-
-        #linear part
-
-        LinearDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-
-        #NonLinear Part
-        Flexibility_modified = self.CalculateModifiedOrthogonalFlexibilityDifferenceMatrix()
-        F_2ndOrder = self.CalculateOrthogonalSecondOrderForceVector()
-        F_2ndOrder_square = F_2ndOrder ** 2
-        orthogonal_second_order_displacement_vector_nonlinear_part =  Computer.DirectDisplacementSolver(Flexibility_modified, F_2ndOrder_square)
-        second_order_displacement_vector_nonlinear_part = Computer.OrthogonalSolver(orthogonal_second_order_displacement_vector_nonlinear_part, SMatrix = self.CalculateK2ndOrderMinusKLinear(), Back = True)
-        
-        print("correctLinearDisplacement",LinearDisplacement)
-        print("correctNonlinearDisplacement", second_order_displacement_vector_nonlinear_part)
-        approximated_second_order_displacement_vector = LinearDisplacement + second_order_displacement_vector_nonlinear_part
-        
-        return approximated_second_order_displacement_vector
     
     def SetModifiedValues(self):
 
@@ -126,6 +113,7 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
         for i in range(len(self.Loads)):
             self.Loads[i].Magnitude = self.Loads[i].Magnitude * LoadFactor
 
+        self.EigenVectorMatrix = self.CalculateK2ndOrderMinusKLinear()
         self.ModifiedFlexibilityMatrix = self.CalculateModifiedOrthogonalFlexibilityDifferenceMatrix()
 
         #print("ModifiedFlexibility matrix at critical load",self.ModifiedFlexibilityMatrix)
@@ -135,60 +123,62 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
     
     def CalculateForceVectorSquare(self, ForceVector):
 
-        SMatrix = self.CalculateK2ndOrderMinusKLinear()
+        SMatrix = self.EigenVectorMatrix
         orthogonalForceVector = Computer.OrthogonalSolver(np.array(ForceVector), SMatrix = SMatrix)
         orthogonalForceVector_square = orthogonalForceVector ** 2
 
         return orthogonalForceVector_square
     
-    def CalculateApproximatedValueDisplacement(self):
+    def CalculateApproximatedValueDisplacement(self, ReturnNonlinearDisplacement=False, ReturnLinearDisplacement=False):
 
         #LinearPart
         LinearDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
-        #print("Linear Displacement", LinearDisplacement)
 
         #NonlinearPart
         NonlinearDisplacementOrthogonal = Computer.DirectDisplacementSolver(self.ModifiedFlexibilityMatrix, self.CalculateForceVectorSquare(self.ForceVector()))
-        NonlinearDisplacement = Computer.OrthogonalSolver(NonlinearDisplacementOrthogonal, SMatrix=self.CalculateK2ndOrderMinusKLinear(), Back=True)
-        #print("Nonlinear Displacement", NonlinearDisplacement)
+        NonlinearDisplacement = Computer.OrthogonalSolver(NonlinearDisplacementOrthogonal, SMatrix=self.EigenVectorMatrix, Back=True)
 
+        if ReturnNonlinearDisplacement == True:
+            return NonlinearDisplacement
+        if ReturnLinearDisplacement == True:
+            return LinearDisplacement
         return LinearDisplacement + NonlinearDisplacement
     
-    def dummycheckfunction(self):
- 
-        self.SetModifiedValues()
-        approximate_displacement = self.CalculateApproximatedValueDisplacement()
+    def ApproximatedSecondOrderDisplacementLocal(self, ReturnNonlinearDisplacement=False, ReturnLinearDisplacement=False):
+        """
+        Returns the approximated second order displacement vector. 
+        This is applicable for point where force vector.
+        This solves by difference between linear and nonlinear displacement is known
+        """
+        #LinearPart
+        LinearDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
 
-        print("Approximated Second Order Displacement Vector:", approximate_displacement)
+        #NonlinearPart
+        DifferenceFlexibilityMatrix = self.CalculateK2ndOrderMinusKLinear()
+        NonlinearDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+        NonlinearDisplacementOrthogonal = Computer.OrthogonalSolver(NonlinearDisplacement, SMatrix=DifferenceFlexibilityMatrix)
+        rootNonlinearDisplacementOrthogonal = np.array(NonlinearDisplacementOrthogonal)/np.array(self.ForceVector())
+        NonlinearDisplacement = Computer.OrthogonalSolver(NonlinearDisplacement, SMatrix=DifferenceFlexibilityMatrix, Back=True)
+
+        if ReturnNonlinearDisplacement == True:
+            return NonlinearDisplacement
+        if ReturnLinearDisplacement == True:
+            return LinearDisplacement
+        return LinearDisplacement + NonlinearDisplacement
+        
     
     def ApproximatedSecondOrderDisplacementVectorDict(self):
 
         """ Returns a dictionary of displacements for each DOF."""
 
         self.DisplacementDict={}
-        displacement = self.CalculateApproximatedValueDisplacement()
+        displacement = self.CalculateApproximatedValueDisplacement( ReturnNonlinearDisplacement = False, ReturnLinearDisplacement = False)
         for i in range(len(self.TotalDoF())):
             if(i<(len(self.UnConstrainedDoF()))):
                 self.DisplacementDict[str(self.TotalDoF()[i])] = displacement[i]
             else:
                 self.DisplacementDict[str(self.TotalDoF()[i])]=0
         return self.DisplacementDict
-
-
-
-        
-
-        
-
-
-
-
-
-
-
-
-
-
 
 
     def ApproximatedSecondOrderDisplacementTrace(self, NodeNumber = 1, Direction = "x", LoadFactor = None, division =20):
@@ -233,9 +223,14 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
         LoadTrace, DisplacementTrace = self.ApproximatedSecondOrderDisplacementTrace(NodeNumber, Direction, LoadFactor, division)
         LoadTrace1, DisplacementTrace1 = self.SecondOrderLoadDisplacementTrace(NodeNumber, Direction, LoadFactor, division, iteration_steps)
         
+        LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        linear_model = FirstOrderGlobalResponse(Points = self.Points, Members = self.Members, Loads = self.Loads)
+        LoadTrace2, DisplacementTrace2 = linear_model.LoadDisplacementTrace(NodeNumber, Direction, LoadFactor, division)
+        
         plt.figure(figsize=(10, 6))
         plt.plot(DisplacementTrace, LoadTrace, marker='o', linestyle='-', color='blue')
         plt.plot(DisplacementTrace1, LoadTrace1, marker='o', linestyle='-', color='green')
+        plt.plot(DisplacementTrace2, LoadTrace2, marker='o', linestyle='-', color='red')
         plt.title(f"Load-Displacement Curve for Node {NodeNumber} in {Direction} Direction")
         plt.xlabel("Displacement")
         plt.ylabel("Load")
@@ -247,6 +242,22 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
 
 
 
+    def CalculateApproximatedSecondOrderDisplacementVector(self):
+
+        #linear part
+
+        LinearDisplacement = Computer.DirectInverseDisplacementSolver(self.GlobalStiffnessMatrixCondensed(),self.ForceVector())
+
+        #NonLinear Part
+        Flexibility_modified = self.CalculateModifiedOrthogonalFlexibilityDifferenceMatrix()
+        F_2ndOrder = self.CalculateOrthogonalSecondOrderForceVector()
+        F_2ndOrder_square = F_2ndOrder ** 2
+        orthogonal_second_order_displacement_vector_nonlinear_part =  Computer.DirectDisplacementSolver(Flexibility_modified, F_2ndOrder_square)
+        second_order_displacement_vector_nonlinear_part = Computer.OrthogonalSolver(orthogonal_second_order_displacement_vector_nonlinear_part, SMatrix = self.CalculateK2ndOrderMinusKLinear(), Back = True)
+        
+        approximated_second_order_displacement_vector = LinearDisplacement + second_order_displacement_vector_nonlinear_part
+        
+        return approximated_second_order_displacement_vector
 
 
     def checkcorrectness(self):
@@ -276,5 +287,3 @@ class ApproximatedSecondOrderAnalysis(SecondOrderMemberResponse):
         print("Element-wise percentage error and values:")
         for idx, (err, approx_val, true_val) in enumerate(zip(elementwise_error, approximated_second_order_displacement_vector, second_order_displacement_vector)):
             print(f"  Element {idx}: Error = {err:.4f}%, Approximated = {approx_val:.6g}, True = {true_val:.6g}")
-    
-   

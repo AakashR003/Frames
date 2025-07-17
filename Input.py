@@ -8,6 +8,7 @@ from DynamicResponse import DynamicGlobalResponse
 from Comparision import Comparision
 from Sensitivity import Senstivity, SecondOrderSensitivity
 from ApproximatedSecondOrderAnalysis import ApproximatedSecondOrderAnalysis
+from Strain_Energy import StrainEnergy
 from FiniteElementDivisor import divide_into_finite_elements
 from Functions import print_class_Objects
 
@@ -41,7 +42,7 @@ Member(Beam_Number=4, Start_Node=Points[0], End_Node=Points[2], Area=0.09, Young
 
 Loads = [
 #NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
-NeumanBC(type="PL", Magnitude=-19600, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
+NeumanBC(type="PL", Magnitude=-79600, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
 #NeumanBC(type="NL", Magnitude=-10, AssignedTo="Node 2", Members = Members, Nodes = Points)
 ]
 
@@ -63,6 +64,7 @@ Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberRes
 DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 Sensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads = Loads)
 ApproximatedSecondOrderAnalysis1 = ApproximatedSecondOrderAnalysis(Points = Points, Members = Members, Loads = Loads)
+StrainEnergy1 = StrainEnergy(Points = Points, Members = Members, Loads = Loads)
 
 
 print("unconstrained dof",Model1.UnConstrainedDoF())
@@ -73,10 +75,17 @@ Model1.PlotGlobalModel()
 
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, Solver="eigsh", scale_factor = 1)
 #print(np.round(ApproximatedSecondOrderAnalysis1.CalculateModifiedOrthogonalStiffnessDifferenceMatrix().real, 2))
-ApproximatedSecondOrderAnalysis1.checkcorrectness()
-ApproximatedSecondOrderAnalysis1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 15, Direction = "y", division =20)
-Comparision1.PlotGlobalDeflectionComparison(scale_factor = 1)
-#ApproximatedSecondOrderAnalysis1.trace()
+#ApproximatedSecondOrderAnalysis1.checkcorrectness()
+#ApproximatedSecondOrderAnalysis1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 9, Direction = "x", division =20)
+#Comparision1.PlotLoadDisplacementCurveComparison(NodeNumber = 15, Direction = "y", division =20)
+ApproximatedSecondOrderAnalysis1.SetModifiedValues()
+print(ApproximatedSecondOrderAnalysis1.ApproximatedSecondOrderDisplacementLocal())
+print(ApproximatedSecondOrderAnalysis1.CalculateApproximatedValueDisplacement())
+
+#print("Linear Strain Energy",StrainEnergy1.CalculateLinearStrainEnergy())
+#print("Linearized Strain Energy",StrainEnergy1.CalculateLinearizedStrainEnergy())
+#print("Approximated NonLinear Strain Energy",StrainEnergy1.CalculateApproximatedNonlinearStrainEnergy())
+#print("Finite DIfference NonLinear Strain Energy",StrainEnergy1.CalculateFiniteDifferenceNonLinearStrainEnergy())
 
 print("Completed Necessary")
 print("Starting Additional")
@@ -115,7 +124,7 @@ print("Starting Additional")
 #print(SecondOrderResponse1.BucklingEigenLoad())
 #SecondOrderResponse1.PlotEigenMode(EigenModeNo = 3, Solver="eigsh", scale_factor = 1)
 #SecondOrderResponse1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 10, Direction = "y", LoadFactor = None, division =20)
-print(SecondOrderResponse1.SecondOrderDisplacementVector(iteration_steps=5))
+#print(SecondOrderResponse1.SecondOrderDisplacementVector(iteration_steps=5))
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
 #mf = SecondOrderMemberResponse1.MemberForceLocal(1, All = True)

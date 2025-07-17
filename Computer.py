@@ -190,7 +190,7 @@ class Computer():
                 return np.dot(np.dot(np.transpose(Computer.EigenSolver(SMatrix, k = len(SMatrix))), Matrix), Computer.EigenSolver(SMatrix, k = len(SMatrix)))
         
         else:
-            print("Back is True")
+            #print("Back is True")
             if Matrix.ndim == 2 and Matrix.shape[1] == 1:
                 return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), Matrix)
             
