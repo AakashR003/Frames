@@ -179,6 +179,7 @@ class Computer():
     
     def OrthogonalSolver (Matrix, SMatrix, Back = False):
         
+        Matrix = np.array(Matrix)
         if Back == False:
             if Matrix.ndim == 2 and Matrix.shape[1] == 1:
                 return np.dot(np.transpose(Computer.EigenSolver(SMatrix, k = len(SMatrix))), Matrix)
@@ -198,7 +199,7 @@ class Computer():
                 return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), np.transpose(Matrix))
             
             else:    # need to check this   
-                return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), np.dot(Matrix, Computer.EigenSolver(SMatrix, k = len(SMatrix))))
+                return np.dot(Computer.EigenSolver(SMatrix, k = len(SMatrix)), np.dot(Matrix, np.transpose(Computer.EigenSolver(SMatrix, k = len(SMatrix)))))
             
     def SupportForceVector():
         return None

@@ -19,7 +19,8 @@ class StrainEnergy(ApproximatedSecondOrderAnalysis):
     
     def CalculateLinearStrainEnergy(self):
 
-        LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        #LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        LoadFactor = 1
         for i in range(len(self.Loads)):
             self.Loads[i].Magnitude = self.Loads[i].Magnitude * LoadFactor
         
@@ -29,6 +30,10 @@ class StrainEnergy(ApproximatedSecondOrderAnalysis):
         
         strain_energy = 0.5 * np.dot(displacement_vector, np.transpose(ForceVector))
 
+        strain_energy_orthogonal = 0.5 * np.dot(Computer.OrthogonalSolver(displacement_vector, SMatrix = self.GlobalStiffnessMatrixCondensed()),
+                                        np.transpose(Computer.OrthogonalSolver(ForceVector, SMatrix = self.GlobalStiffnessMatrixCondensed())))
+
+        print("Orthogonal",strain_energy_orthogonal)
         for i in range(len(self.Loads)):
             self.Loads[i].Magnitude = self.Loads[i].Magnitude / LoadFactor
         
@@ -36,7 +41,8 @@ class StrainEnergy(ApproximatedSecondOrderAnalysis):
     
     def CalculateLinearizedStrainEnergy(self):
 
-        LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        #LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        LoadFactor = 1
         for i in range(len(self.Loads)):
             self.Loads[i].Magnitude = self.Loads[i].Magnitude * LoadFactor
         
@@ -53,32 +59,41 @@ class StrainEnergy(ApproximatedSecondOrderAnalysis):
     def CalculateApproximatedNonlinearStrainEnergy(self):
 
         """ calculate strain enery at critical point """
-        LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        #LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        LoadFactor = 1
         for i in range(len(self.Loads)):
             self.Loads[i].Magnitude = self.Loads[i].Magnitude * LoadFactor
         
-        #Linear part
-        LinearPart_displacement_vector = self.CalculateApproximatedSecondOrderDisplacementVector()
+        self.SetModifiedValues()
         Force_vector = self.ForceVector()
-
+        
+        #Linear part
+        linear_model = FirstOrderGlobalResponse(Points = self.Points, Members = self.Members, Loads = self.Loads)
+        LinearPart_displacement_vector = linear_model.DisplacementVector()
         Linear_partStrainEnergy = 0.5 * np.dot(LinearPart_displacement_vector, np.transpose(Force_vector))
 
         #NonLinear Part 
-        self.SetModifiedValues()
+        differencedisplacement = self.SecondOderDisplacement - LinearPart_displacement_vector
         
+        #nonlinearpart_strain_energy = 1/3*np.dot(differencedisplacement, np.transpose(Force_vector))
         nonlinearpart_strain_energy = 1/3*np.dot(self.CalculateApproximatedValueDisplacement(ReturnNonlinearDisplacement=True), np.transpose(Force_vector))
+        #nonlinearpart_strain_energy = 2/3*np.dot(self.CalculateApproximatedValueDisplacement(ReturnNonlinearDisplacement=True), np.transpose(Force_vector))
         
+        rect_area = np.dot(self.SecondOderDisplacement, np.transpose(Force_vector)) # we are like computing complementaory strain energy, then subtracting with reactangle area
+        strain_energy1 = rect_area - nonlinearpart_strain_energy - Linear_partStrainEnergy #use 13 for nonlinear strain energy
+        #print("Rect Area_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa", rect_area, strain_energy1)
         for i in range(len(self.Loads)):
             self.Loads[i].Magnitude = self.Loads[i].Magnitude / LoadFactor
         
-        return Linear_partStrainEnergy + nonlinearpart_strain_energy
+        return strain_energy1 #Linear_partStrainEnergy + nonlinearpart_strain_energy
     
     def CalculateFiniteDifferenceNonLinearStrainEnergy(self):
         """
         Calculate the finite difference nonlinear strain energy.
         """
 
-        LoadFactor = self.BucklingEigenLoad()[0] * 0.8
+        #LoadFactor = self.BucklingEigenLoad()[0] * 0.8 #Uncomment this line if you want to use a buckling load factor
+        LoadFactor = 1.0
         division = 10
         LoadTrace = np.linspace(0.1, LoadFactor, division)
 
@@ -100,7 +115,5 @@ class StrainEnergy(ApproximatedSecondOrderAnalysis):
 
             for i in range(len(self.Loads)):
                 self.Loads[i].Magnitude = self.Loads[i].Magnitude / load
-        
-
         
         return strain_energy

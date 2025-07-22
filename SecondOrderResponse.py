@@ -98,7 +98,7 @@ class SecondOrderGlobalResponse(Model):
         print("2nd order displacement computed")
         
         if ReturnSM == True:
-            return self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList)
+            return self.SecondOrderGlobalStiffnessMatrixCondensed(NorForList), SecondOrderDisplacement
         
         return SecondOrderDisplacement
     
