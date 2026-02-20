@@ -30,6 +30,8 @@ You also have an options
 1. Dividing Strutures Individual Finite Elements (Reduces working time on creating Nodes and elements)
 2. creating comparitive plot between two models (Presently its available only for Bending Moment)
 
+---
+
 ## 2.How to Use:
 
 1. Create and Assemble the Structural Model
@@ -46,8 +48,7 @@ The package contains following Modules:
 6. DynamicResponse - With this you can create DynamicGlobalResponse
 7. FiniteElementDivisor and Comparision
 
-
-
+---
 
 ### 2.1 How to create Strucutural Model
 
@@ -78,7 +79,7 @@ Based on the Modules gives above use the following variables explained below to 
    - **Members** – List the member numbers assigned to this boundary condition as integers.
 
 Example:
-
+```python
 Points = [
 StructuralElements.Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Hinged Support"),
 StructuralElements.Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
@@ -97,32 +98,25 @@ StructuralElements.Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3
 Loads = [
 Loads.NeumanBC(type="PL", Magnitude=100000, Distance1= 2.5, AssignedTo="Member 2", Members = Members)
 ] 
-
+```
 This creates a Square frame with point Load on Middle
 
+---
 
 ### 2.2 How to create responses:
 
 Response is created based on the Structure. Example of creating each response is given
-
+```python
 Model1 = main.Model(Points = Points, Members = Members, Loads = Loads)
-
 GlobalRes1 = FirstOrderResponse.FirstOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
-
 NodalRes1 = NodalResponse(Points = Points, Members = Members, Loads = Loads)
-
 MemberRes1 = FirstOrderResponse.FirstOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
-
 SecondOrderResponse1 = SecondOrderResponse.SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
-
 SecondOrderMemberResponse1 = SecondOrderResponse.SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
-
 Comparision1 = Comparision.Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberResponse1)
-
 DynamicResponse1 = DynamicResponse.DynamicGlobalResponse(Points = Points, Members = Members, Loads = Loads)
+```
 
-
-Instead of Model1, GlobalResponse1 you can use anyother name. 
 Based on this model Structural results can be obtained as shown below
 
 Follwing Structural results are availabe for each response:
