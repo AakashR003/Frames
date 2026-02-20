@@ -1,5 +1,11 @@
+# FEM for Frame Elements
 
-**1.Introduction:**
+This repository contains Python files. You can either clone this repository and use the software locally, or:
+
+1. Use the web interface: https://structuralanalysis.streamlit.app
+2. Install it as a PyPI module: https://pypi.org/project/NStructAnaly
+
+## 1.Introduction:
 
 This is a Python Module for performing Linear, Nonlinear(2nd Order), Dynamic and Sensitivity Analysis of plane frames and Truss. You can use the package to calculate the following:
 
@@ -24,7 +30,7 @@ You also have an options
 1. Dividing Strutures Individual Finite Elements (Reduces working time on creating Nodes and elements)
 2. creating comparitive plot between two models (Presently its available only for Bending Moment)
 
-**2.How to Use:**
+## 2.How to Use:
 
 1. Create and Assemble the Structural Model
 2. Create Responses
@@ -43,7 +49,7 @@ The package contains following Modules:
 
 
 
-**2.1 How to create Strucutural Model**
+### 2.1 How to create Strucutural Model
 
 Based on the Modules gives above use the following variables explained below to create strucutre
 
@@ -95,7 +101,7 @@ Loads.NeumanBC(type="PL", Magnitude=100000, Distance1= 2.5, AssignedTo="Member 2
 This creates a Square frame with point Load on Middle
 
 
-**2.2 How to create responses:**
+### 2.2 How to create responses:
 
 Response is created based on the Structure. Example of creating each response is given
 
