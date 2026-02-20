@@ -107,9 +107,7 @@ This creates a Square frame with point Load on Middle
 
 Response is created based on the Structure. Example of creating each response is given
 ```python
-Model1 = main.Model(Points = Points, Members = Members, Loads = Loads)
 GlobalRes1 = FirstOrderResponse.FirstOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
-NodalRes1 = NodalResponse(Points = Points, Members = Members, Loads = Loads)
 MemberRes1 = FirstOrderResponse.FirstOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderResponse1 = SecondOrderResponse.SecondOrderGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderMemberResponse1 = SecondOrderResponse.SecondOrderMemberResponse(Points = Points, Members = Members, Loads = Loads)
