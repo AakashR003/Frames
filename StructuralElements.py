@@ -127,6 +127,12 @@ class Member():
      
         return Transformation_Matrix
     
+    def FirstOrderStrainDisplacementRelationship(self, x=0):
+
+        length = self.length()
+        B_Matrix = [12*x/length**3 - 6/length**2, 6*x/length**2 - 4/length, 6/length**2 - 12*x/length**3, 6*x/length**2 - 2/length]
+        return B_Matrix
+    
     def First_Order_Local_Stiffness_Matrix_2(self, NormalForce = None):
         """ This Stiffness Matrix is from Lecture Notes of Stability of Structure 
         - typically used for 2nd order analysis"""

@@ -119,11 +119,12 @@ class Comparision():
             ax.plot(x_points, y_points, color='red', linewidth=1)
 
         ax.axis('equal')
+        plt.savefig("D:\\1.TUM courses\\4th Semester\\Study Project\\OwnSoftwareSimulation\\Model1\\BMD_Comparision.png", dpi=300, bbox_inches='tight')
         plt.show()
 
     def PlotGlobalSFDComparison(self, scale_factor=1.0, show_structure=True):
         fig, ax = plt.subplots(figsize=(12, 8))
-        ax.set_title("Comparision Bending Moment Diagram")
+        ax.set_title("Comparision Shear Force Diagram")
         
         if show_structure:
             computer_instance = Computer()
@@ -316,6 +317,7 @@ class Comparision():
             ax.plot(x_points, y_points, color='red', linewidth = 2)
 
         ax.axis('equal')
+        plt.savefig("D:\\1.TUM courses\\4th Semester\\Study Project\\OwnSoftwareSimulation\\Model1\\Deflection_Comparision.png", dpi=300, bbox_inches='tight')
         plt.show()
 
     def PlotLoadDisplacementCurveComparison(self, NodeNumber = 1, Direction = "x", division = 20):

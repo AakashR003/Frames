@@ -98,11 +98,11 @@ class Senstivity(FirstOrderGlobalResponse):
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
             if SensitivityType == "Axial":
-                sensitivity = self.AxialMemberSensitivity(i+1, 1e-6)  # Using a small scale factor 
+                sensitivity = self.AxialMemberSensitivity(i+1, 1e-12)  # Using a small scale factor 
             elif SensitivityType == "Bending":
-                sensitivity = self.BendingMemberSensitivity(i+1, 1e-6)  # Using a small scale factor 
+                sensitivity = self.BendingMemberSensitivity(i+1, 1e-12)  # Using a small scale factor 
             elif SensitivityType == "Material":
-                sensitivity = self.MaterialSensitivity(i+1, 1e-6)  # Using a small scale factor 
+                sensitivity = self.MaterialSensitivity(i+1, 1e-12)  # Using a small scale factor 
             else:
                 raise ValueError("Unsupported SensitivityType. Currently, only 'Bending' is supported.")
             sensitivities.append(sensitivity)
@@ -228,7 +228,7 @@ class EigenSensitivity(SecondOrderGlobalResponse):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
-            self.BeamBendingSensitivity(i+1, 1e-10, Eigen = Eigen, EigenModeNo = EigenModeNo)
+            self.BeamBendingSensitivity(i+1, 1e-12, Eigen = Eigen, EigenModeNo = EigenModeNo)
         sensitivity_values = [member.LBSensitivityBend for member in self.Members]
 
         return sensitivity_values
@@ -237,7 +237,7 @@ class EigenSensitivity(SecondOrderGlobalResponse):
         Eigen = self.BucklingEigenLoad(Solver = "eigsh")
         for i in range(len(self.Members)):
             # Calculate the sensitivity for each member
-            self.BeamBendingSensitivity(i+1, 1e-10, Eigen = Eigen, EigenModeNo = EigenModeNo)
+            self.BeamBendingSensitivity(i+1, 1e-12, Eigen = Eigen, EigenModeNo = EigenModeNo)
         sensitivity_values = [member.LBSensitivityBend for member in self.Members]
 
         return sensitivity_values
@@ -265,11 +265,10 @@ class EigenSensitivity(SecondOrderGlobalResponse):
 
 class SecondOrderSensitivity(StrainEnergy):
     """
-    This class is a placeholder for second-order sensitivity analysis.
-    Currently, it does not implement any specific methods.
+    This class calculates sensitivities of strain energy with respect to member properties
     """
 
-    def GlobalSecondOrderBendingSensitivity(self, MemberNumber, scale=1e-6):
+    def GlobalSecondOrderBendingSensitivity(self, MemberNumber, scale=1e-12):
 
         DisplacementVector = self.SecondOrderDisplacementVector(iteration_steps=5)
 
@@ -290,154 +289,57 @@ class SecondOrderSensitivity(StrainEnergy):
 
 
         return sensitivity
-    
-    def FirstOrderPartBendingSensitivity(self, MemberNumber, scale=1e-6):
-        """
-        This method calculates the first part of the second-order bending sensitivity for a member.
-        It perturbs the member's moment of inertia and computes the sensitivity.
-        """
-        DisplacementVector = self.SecondOrderDisplacementVector(iteration_steps=5)
+       
+    def CalculateSimpsonsSensitivityAllMembers(self, scale =1e-12 ):
 
-        StiffnessMatrix_Unmodified, self.SecondOderDisplacement = self.SecondOrderDisplacementVector(iteration_steps = 5, ReturnSM = True)
-        FirstOrderResponse1 = FirstOrderGlobalResponse(Points=self.Points, Members=self.Members, Loads=self.Loads)
-        FirstOrder_stiffness_Unmodified = FirstOrderResponse1.GlobalStiffnessMatrixCondensed()
-
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].moment_of_inertia += scale
+        #UnModified
         
-        StiffnessMatrix_Modified, self.SecondOderDisplacement = self.SecondOrderDisplacementVector(iteration_steps = 5, ReturnSM = True)
+        #SecondPart
+        F2 = np.array(self.ForceVector())
+        StiffnessMatrix_2_Unmodified, U2 = self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)
 
-        dk_ds = (np.array(StiffnessMatrix_Modified) - np.array(StiffnessMatrix_Unmodified))
-        sensitivity = 0.5*np.dot(np.dot(np.transpose(DisplacementVector), dk_ds), DisplacementVector)
-
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].moment_of_inertia -= scale
-
-        return sensitivity
-    
-    def SecondOrderPartBendingSensitivity(self, MemberNumber, scale=1e-6):
-
-        SecondOrder_stiffness = self.SecondOrderDisplacementVector(iteration_steps=8, ReturnSM=True)
-        SecondOrder_DisplacementVector = self.SecondOrderDisplacementVector(iteration_steps=8)
-        #SecondOrder_DisplacementVector_orthogonal = Computer.OrthogonalSolver(SecondOrder_DisplacementVector, SMatrix=SecondOrder_stiffness)
+        #FirstPart
+        for i in range(len(self.Loads)):
+            self.Loads[i].Magnitude = self.Loads[i].Magnitude / 2
         
+        StiffnessMatrix_1_Unmodified, U1 = self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)
 
-        FirstOrderResponse1 = FirstOrderGlobalResponse(Points=self.Points, Members=self.Members, Loads=self.Loads)
+        for i in range(len(self.Loads)):
+            self.Loads[i].Magnitude = self.Loads[i].Magnitude * 2
 
-        FirstOrder_stiffness = FirstOrderResponse1.GlobalStiffnessMatrixCondensed()
-        FirstOrder_DisplacementVector = FirstOrderResponse1.DisplacementVector()
-        #FirstOrder_DisplacementVector_orthogonal = Computer.OrthogonalSolver(FirstOrder_DisplacementVector, SMatrix=FirstOrder_stiffness)
-
-        FirstOrder_FlexibilityMatrix = Computer.FlexibilityMatrixSolver(FirstOrder_stiffness)
-        SecondOrder_FlexibilityMatrix = Computer.FlexibilityMatrixSolver(SecondOrder_stiffness)
-
-        self.SetModifiedValues()
-        DifferenceStiffness_matrix1 = SecondOrder_stiffness - FirstOrder_stiffness
-        #DifferenceStiffness_matrix1 = Computer.FlexibilityMatrixSolver(self.ModifiedFlexibilityMatrix)
-        Difference_DisplacementVector1 = SecondOrder_DisplacementVector - FirstOrder_DisplacementVector
-        Difference_FlexibilityMatrix1 = SecondOrder_FlexibilityMatrix - FirstOrder_FlexibilityMatrix
-        Orthogonal_Difference_Flexibility_Matrix1 = Computer.OrthogonalSolver(Difference_FlexibilityMatrix1, SMatrix=Difference_FlexibilityMatrix1)
-        ForceVector_Orthogonal1 = Computer.OrthogonalSolver(self.ForceVector(), SMatrix=Orthogonal_Difference_Flexibility_Matrix1)
-        Orthogonal_Modified_Difference_Flexibility_Modified_matrix1 = Orthogonal_Difference_Flexibility_Matrix1 / ForceVector_Orthogonal1[:, np.newaxis] # U = Flexbility * F_square
-
-        # WIth modified Flexibility, Flexibility *FSqaure = Nonlinear part of U. Hence Flexibility * F is not Nonlinear part of U. Hence computing it
-        Orthogonal_Modified_Displacement_with_modified_Flexibility = Computer.DirectDisplacementSolver(Orthogonal_Modified_Difference_Flexibility_Modified_matrix1, self.ForceVector())
-        Modified_Displacement_with_modified_Flexibility = Computer.OrthogonalSolver(Orthogonal_Modified_Displacement_with_modified_Flexibility, SMatrix=Difference_FlexibilityMatrix1, Back=True)
-        Orthogonal_Difference_DisplacementVector1 = Computer.OrthogonalSolver(Difference_DisplacementVector1, SMatrix=Difference_FlexibilityMatrix1)
         
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].moment_of_inertia += scale
+        #Modified
+        SenstivityList = []
+        for Member in self.Members:
 
-        FirstOrderResponse2 = FirstOrderGlobalResponse(Points=self.Points, Members=self.Members, Loads=self.Loads)
-        SecondOrder_DisplacementVector2 = self.SecondOrderDisplacementVector(iteration_steps=8)
-        FirstOrder_DisplacementVector2 = FirstOrderResponse2.DisplacementVector()
-        FirstOrder_stiffness2 = FirstOrderResponse2.GlobalStiffnessMatrixCondensed()
-        SecondOrder_stiffness2 = self.SecondOrderDisplacementVector(iteration_steps=8, ReturnSM=True)
+            Member.moment_of_inertia += scale
+            StiffnessMatrix_2_Modified= self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)[0]
 
-        FirstOrder_FlexibilityMatrix2 = Computer.FlexibilityMatrixSolver(FirstOrder_stiffness2)
-        SecondOrder_FlexibilityMatrix2 = Computer.FlexibilityMatrixSolver(SecondOrder_stiffness2)
+            #FirstPart
+            for i in range(len(self.Loads)):
+                self.Loads[i].Magnitude = self.Loads[i].Magnitude / 2
+            
+            StiffnessMatrix_1_Modified= self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)[0]
+            
+            for i in range(len(self.Loads)):
+                self.Loads[i].Magnitude = self.Loads[i].Magnitude * 2
+
+            difference_k1 = StiffnessMatrix_1_Modified - StiffnessMatrix_1_Unmodified
+            difference_k2 = StiffnessMatrix_2_Modified - StiffnessMatrix_2_Unmodified
+
+            FirstPart = 4/6*np.dot(np.dot(np.transpose(Computer.DirectInverseDisplacementSolver(StiffnessMatrix_1_Unmodified, F2)),difference_k1),U1)
+            SecondPart = np.dot(np.dot(np.transpose(U2),difference_k2),U2) / 6
+
+            complimentarySensitivity = FirstPart + SecondPart
+            rectangleSensitivity = np.dot(np.dot(np.transpose(U2),difference_k2),U2)
+            Sensitivity = rectangleSensitivity - complimentarySensitivity
+            
+            SenstivityList.append(-Sensitivity)
+            Member.moment_of_inertia -= scale
         
-        self.SetModifiedValues() 
-        DifferenceStiffness_matrix2 = SecondOrder_stiffness2 - FirstOrder_stiffness2
-        #DifferenceStiffness_matrix2 = Computer.FlexibilityMatrixSolver(self.ModifiedFlexibilityMatrix)
-        Difference_DisplacementVector2 = SecondOrder_DisplacementVector2 - FirstOrder_DisplacementVector2
-        Difference_FlexibilityMatrix2 = SecondOrder_FlexibilityMatrix2 - FirstOrder_FlexibilityMatrix2
-        Orthogonal_Difference_Flexibility_Matrix2 = Computer.OrthogonalSolver(Difference_FlexibilityMatrix2, SMatrix=Difference_FlexibilityMatrix2)
-        ForceVector_Orthogonal2 = Computer.OrthogonalSolver(self.ForceVector(), SMatrix=Orthogonal_Difference_Flexibility_Matrix2)
-        Orthogonal_Modified_Difference_Flexibility_Modified_matrix2 = Orthogonal_Difference_Flexibility_Matrix2 / ForceVector_Orthogonal2[:, np.newaxis] # U = Flexbility * F_square
+        return SenstivityList
+
         
-
-
-        d_BendingStiffness_ds = DifferenceStiffness_matrix2 - DifferenceStiffness_matrix1
-        print(d_BendingStiffness_ds)
-        d_BendingStiffness_ds = np.linalg.inv(Orthogonal_Modified_Difference_Flexibility_Modified_matrix1) - np.linalg.inv(Orthogonal_Modified_Difference_Flexibility_Modified_matrix2)
-
-        #sensitivity = 2/3 * np.dot(np.dot(np.transpose(Modified_Displacement_with_modified_Flexibility),d_BendingStiffness_ds),Difference_DisplacementVector1)
-        
-        sensitivity = 2/3 * np.dot(np.dot(np.transpose(Orthogonal_Modified_Displacement_with_modified_Flexibility),d_BendingStiffness_ds),Difference_DisplacementVector1)
-
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].moment_of_inertia -= scale
-        
-        
-        return sensitivity
-    
-    def try2SecondOrderPartSensitivity(self, MemberNumber, scale = 1e-6):
-
-        self.SetModifiedValues() 
-        one = np.dot(self.ModifiedFlexibilityMatrix, self.ForceVector())
-        one_1= self.CalculateApproximatedValueDisplacement(ReturnNonlinearDisplacement=True)
-        one_2 = self.SecondOrderDisplacementVector(iteration_steps = 5)
-        one_3 = self.ForceVector()
-
-        three = self.CalculateApproximatedValueDisplacement(ReturnNonlinearDisplacement=True)
-
-        k1 = np.linalg.inv(Computer.OrthogonalSolver(self.ModifiedFlexibilityMatrix, SMatrix=self.CalculateK2ndOrderMinusKLinear, Back=True))
-        k1_1 = self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)[0] - self.GlobalStiffnessMatrixCondensed()
-        k1_2 = self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)[0]
-        k1_3 = self.GlobalStiffnessMatrixCondensed()
-        k1_4 = np.linalg.inv(self.ModifiedFlexibilityMatrix)
-        k1_5 = self.ModifiedFlexibilityMatrix
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].moment_of_inertia += scale
-        
-        self.SetModifiedValues()
-        k2 = np.linalg.inv(Computer.OrthogonalSolver(self.ModifiedFlexibilityMatrix, SMatrix=self.CalculateK2ndOrderMinusKLinear, Back=True))
-        k2_1 = self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)[0] - self.GlobalStiffnessMatrixCondensed()
-        k2_2 = self.SecondOrderDisplacementVector(iteration_steps=5, ReturnSM=True)[0]
-        k2_3 = self.GlobalStiffnessMatrixCondensed()
-        k2_4 = np.linalg.inv(self.ModifiedFlexibilityMatrix)
-        k2_5 = self.ModifiedFlexibilityMatrix
-
-
-
-        for i in range(len(self.Members)):
-            if i == MemberNumber-1:
-                self.Members[i].moment_of_inertia -= scale
-
-        two = k2- k1
-        two_1 = k2_1 - k1_1
-        two_2 = k2_2 - k1_2
-        two_3 = k2_3 - k1_3
-        two_4 = k2_4 - k1_4
-        two_5 = k2_5 - k1_5
-
-        Senstivity = 1/3 * np.dot(np.dot(np.transpose(one_1), two), three)
-
-        return Senstivity
-    
-    def try3(self, MemberNumber, linearsensitvity, scale = 1e-6 ):
-        
-        senoverall = self.GlobalSecondOrderBendingSensitivity( MemberNumber, scale) * 2
-        print("Rectangle_AAAAAAAAAAAAAAAAAAAAAAAAA", senoverall)
-        parabola = self.try2SecondOrderPartSensitivity( MemberNumber, scale)
-        
-        return senoverall - parabola - linearsensitvity
 
 
 class FiniteDifferenceSensitivity(Model):
@@ -461,7 +363,7 @@ class FiniteDifferenceSensitivity(Model):
         
         return linear_strain_energy
     
-    def FiniteDifferenceFirstOrderLinearBendingSensitivity(self,MemberNumber, scale=1e-6):
+    def FiniteDifferenceFirstOrderLinearBendingSensitivity(self,MemberNumber, scale=1e-12):
         """
         This method calculates the finite difference sensitivity of the first-order bending stiffness for a member.
         It perturbs the member's moment of inertia and computes the sensitivity.
@@ -485,7 +387,7 @@ class FiniteDifferenceSensitivity(Model):
         
         return sensitivity
     
-    def FiniteDifferenceSecondOrderLinearBendingSensitivity(self,MemberNumber, scale=1e-6):
+    def FiniteDifferenceSecondOrderLinearBendingSensitivity(self,MemberNumber, scale=1e-12):
         """
         This method calculates the finite difference sensitivity of the first-order bending stiffness for a member.
         It perturbs the member's moment of inertia and computes the sensitivity.
@@ -509,7 +411,7 @@ class FiniteDifferenceSensitivity(Model):
         
         return sensitivity
     
-    def FiniteDifferenceApproximatedSecondOrderBendingSensitivity(self, MemberNumber, scale =1e-6):
+    def FiniteDifferenceApproximatedSecondOrderBendingSensitivity(self, MemberNumber, scale =1e-12):
         StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
         objective = StrainEnergy1.CalculateApproximatedNonlinearStrainEnergy()
         nonlinearstrain_energy = objective
@@ -532,7 +434,51 @@ class FiniteDifferenceSensitivity(Model):
         
         return sensitivity
     
-    def FiniteDifferenceSecondOrderNonLinearBendingSensitivity(self,MemberNumber, scale=1e-6):
+    def FiniteDifferenceSimpsonsApproximatedSecondOrderBendingSensitivity(self, MemberNumber, scale = 1e-12):
+        StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
+        objective = StrainEnergy1.CalculateSimpsonsApproximatedNonLinearStrainEnergy()
+        nonlinearstrain_energy = objective
+        
+        #small perturbation
+        for i in range(len(self.Members)):
+            if i == MemberNumber-1:
+                self.Members[i].moment_of_inertia += scale
+
+        StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
+        objective = StrainEnergy1.CalculateSimpsonsApproximatedNonLinearStrainEnergy()
+        modified_nonlinearstrain_energy = objective
+
+        for i in range(len(self.Members)):
+            if i == MemberNumber-1:
+                self.Members[i].moment_of_inertia -= scale
+
+        #Calculate Sensitivity
+        sensitivity = (modified_nonlinearstrain_energy - nonlinearstrain_energy) 
+        
+        return sensitivity
+    
+    def FiniteDifferenceSimpsonsApproximatedSecondOrderBendingSensitivityAllMember(self, scale = 1e-12):
+        StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
+        objective = StrainEnergy1.CalculateSimpsonsApproximatedNonLinearStrainEnergy()
+        nonlinearstrain_energy = objective
+
+        SensitivityList = []
+
+        for Member in self.Members:
+            Member.moment_of_inertia += scale
+
+            StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
+            objective = StrainEnergy1.CalculateSimpsonsApproximatedNonLinearStrainEnergy()
+            modified_nonlinearstrain_energy = objective
+
+            Member.moment_of_inertia -= scale
+            #Calculate Sensitivity
+            sensitivity = (modified_nonlinearstrain_energy - nonlinearstrain_energy) 
+            SensitivityList.append(sensitivity)
+
+        return SensitivityList            
+    
+    def FiniteDifferenceSecondOrderNonLinearBendingSensitivity(self,MemberNumber, scale=1e-12):
         """
         This method calculates the finite difference sensitivity of the second-order bending stiffness for a member.
         It perturbs the member's moment of inertia and computes the sensitivity.
@@ -560,34 +506,62 @@ class FiniteDifferenceSensitivity(Model):
         
         return sensitivity
     
+    def FiniteDifferenceSecondOrderNonLinearBendingSensitivityAllMember(self, scale = 1e-12):
+
+        StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
+        objective = StrainEnergy1.CalculateFiniteDifferenceNonLinearStrainEnergy()
+        nonlinearstrain_energy = objective
+
+        Senstivity_List = []
+        for Member in self.Members:
+            
+            #small perturbation
+            Member.moment_of_inertia += scale
+
+            StrainEnergy1 = StrainEnergy(Points=self.Points, Members=self.Members, Loads=self.Loads)
+            objective = StrainEnergy1.CalculateFiniteDifferenceNonLinearStrainEnergy()
+            modified_nonlinearstrain_energy = objective
+
+            Member.moment_of_inertia -= scale
+
+            #Calculate Sensitivity
+            sensitivity = (modified_nonlinearstrain_energy - nonlinearstrain_energy)
+            Senstivity_List.append(sensitivity)
+        
+        return Senstivity_List
+    
+
+
+    
     def Members_All_Sensitivity(self, all = True):
 
+        SimpsonsApproximated_List = []
         Approximated_list = []
         Linearized_list = []
         Linear_list = []
         Nonlinear_list = []
         for i in range(len(self.Members)):
-            Approximated = self.FiniteDifferenceApproximatedSecondOrderBendingSensitivity(MemberNumber=i+1, scale=0.000000000001)
+            SimpsonsApproximated = self.FiniteDifferenceSimpsonsApproximatedSecondOrderBendingSensitivity(MemberNumber=i+1, scale=0.000000000001)
             Linearized = self.FiniteDifferenceSecondOrderLinearBendingSensitivity(MemberNumber = i+1, scale=0.000000000001)
             Linear = self.FiniteDifferenceFirstOrderLinearBendingSensitivity(MemberNumber = i+1, scale=0.000000000001)
             Nonlinear = self.FiniteDifferenceSecondOrderNonLinearBendingSensitivity(MemberNumber = i+1, scale=0.000000000001)
 
-            Approximated_list.append(Approximated)
+            SimpsonsApproximated_List.append(SimpsonsApproximated)
             Linearized_list.append(Linearized)
             Linear_list.append(Linear)
             Nonlinear_list.append(Nonlinear)
         
-        print(Approximated_list)
         print(Linearized_list)
         print(Linear_list)
         print(Nonlinear_list)
+        print(SimpsonsApproximated_List)
         
         # Calculate relative errors for each element
         print("Relative error (w.r.t Nonlinear) for each element:")
         methods = [
-            ("Approximated", Approximated_list),
             ("Linearized", Linearized_list),
-            ("Linear", Linear_list)
+            ("Linear", Linear_list),
+            ("Simpsons Approxmated", SimpsonsApproximated_List)
         ]
         n = len(self.Members)
         error_sums = {name: 0.0 for name, _ in methods}
@@ -613,13 +587,13 @@ class FiniteDifferenceSensitivity(Model):
             else:
                 return [float('nan') for _ in lst]
 
-        Approximated_norm = normalize_list(Approximated_list)
+        SimpsonsApproximated_norm = normalize_list(SimpsonsApproximated_List)
         Linearized_norm = normalize_list(Linearized_list)
         Linear_norm = normalize_list(Linear_list)
         Nonlinear_norm = normalize_list(Nonlinear_list)
 
         print("\nNormalized lists (by first value of each):")
-        print("Approximated_norm:", Approximated_norm)
+        print("SimpsonsApproximated_norm", SimpsonsApproximated_norm)
         print("Linearized_norm:", Linearized_norm)
         print("Linear_norm:", Linear_norm)
         print("Nonlinear_norm:", Nonlinear_norm)
@@ -627,7 +601,7 @@ class FiniteDifferenceSensitivity(Model):
         # Calculate relative errors for normalized lists
         print("\nRelative error (w.r.t normalized Nonlinear) for each element:")
         norm_methods = [
-            ("Approximated_norm", Approximated_norm),
+            ("SimpsonsApproximated_norm", SimpsonsApproximated_norm),
             ("Linearized_norm", Linearized_norm),
             ("Linear_norm", Linear_norm)
         ]
@@ -646,6 +620,71 @@ class FiniteDifferenceSensitivity(Model):
         for name in norm_error_sums:
             overall_error = norm_error_sums[name] / n
             print(f"  {name}: {overall_error:.2f}%")
+
+class ComparisionSensitivity(Model):
+
+    def __init__(self, **kwargs):
+        self.Points = kwargs.get("Points", None)
+        self.Members = kwargs.get("Members", None)
+        self.Loads = kwargs.get("Loads", None)
+        self.FiniteDifferenceSensitivity_object = FiniteDifferenceSensitivity(Points = self.Points, Members = self.Members, Loads = self.Loads)
+        self.SecondOrderSensitivity_object = SecondOrderSensitivity(Points = self.Points, Members = self.Members, Loads = self.Loads)
+    
+    def AnlSimpson_Vs_FDNonLinear(self):
+
+        SimpsonsApproximated_List = self.SecondOrderSensitivity_object.CalculateSimpsonsSensitivityAllMembers()
+        Nonlinear_List = self.FiniteDifferenceSensitivity_object.FiniteDifferenceSecondOrderNonLinearBendingSensitivityAllMember()
+        print("Simpsons", SimpsonsApproximated_List)
+        print("NonLinear", Nonlinear_List)
+        # Calculate relative errors for each element
+        print("Relative error (w.r.t Nonlinear) for each element:")
+        methods = [
+            ("Simpsons Approxmated", SimpsonsApproximated_List)
+        ]
+        n = len(self.Members)
+        error_sums = {name: 0.0 for name, _ in methods}
+        for i in range(n):
+            print(f"Element {i+1}:")
+            nonlinear = Nonlinear_List[i]
+            for name, values in methods:
+                if nonlinear != 0:
+                    rel_error = abs((values[i] - nonlinear) / nonlinear) * 100
+                else:
+                    rel_error = float('inf')
+                error_sums[name] += rel_error
+                print(f"  {name} vs Nonlinear: {rel_error:.2f}%")
+        print("\nOverall error percentage for each method:")
+        for name in error_sums:
+            overall_error = error_sums[name] / n
+            print(f"  {name}: {overall_error:.2f}%")
+    
+    def AnlSimpson_Vs_FDSimpson(self):
+        SimpsonsApproximated_List = self.SecondOrderSensitivity_object.CalculateSimpsonsSensitivityAllMembers()
+        Numerical_SimpsonsApproximated = self.FiniteDifferenceSensitivity_object.FiniteDifferenceSimpsonsApproximatedSecondOrderBendingSensitivityAllMember()
+        print("Analytical Simpsons", SimpsonsApproximated_List)
+        print("Numerical Simpsons", Numerical_SimpsonsApproximated)
+        # Calculate relative errors for each element
+        print("Relative error (w.r.t Nonlinear) for each element:")
+        methods = [
+            ("Simpsons Approxmated", SimpsonsApproximated_List)
+        ]
+        n = len(self.Members)
+        error_sums = {name: 0.0 for name, _ in methods}
+        for i in range(n):
+            print(f"Element {i+1}:")
+            nonlinear = Numerical_SimpsonsApproximated[i]
+            for name, values in methods:
+                if nonlinear != 0:
+                    rel_error = abs((values[i] - nonlinear) / nonlinear) * 100
+                else:
+                    rel_error = float('inf')
+                error_sums[name] += rel_error
+                print(f"  {name} vs Nonlinear: {rel_error:.2f}%")
+        print("\nOverall error percentage for each method:")
+        for name in error_sums:
+            overall_error = error_sums[name] / n
+            print(f"  {name}: {overall_error:.2f}%")
+
 
 
 

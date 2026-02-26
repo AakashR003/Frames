@@ -6,7 +6,7 @@ from FirstOrderResponse import FirstOrderGlobalResponse, FirstOrderMemberRespons
 from SecondOrderResponse import  SecondOrderGlobalResponse, SecondOrderMemberResponse
 from DynamicResponse import DynamicGlobalResponse
 from Comparision import Comparision
-from Sensitivity import Senstivity, SecondOrderSensitivity, FiniteDifferenceSensitivity
+from Sensitivity import Senstivity, SecondOrderSensitivity, FiniteDifferenceSensitivity, ComparisionSensitivity
 from ApproximatedSecondOrderAnalysis import ApproximatedSecondOrderAnalysis, ApproximatedAnalysisDisplacement
 from Strain_Energy import StrainEnergy
 from FiniteElementDivisor import divide_into_finite_elements
@@ -49,6 +49,7 @@ NeumanBC(type="PL", Magnitude=-79600, Distance1= 2.5, AssignedTo="Member 2", Mem
 ]
 
 """
+
 Points = [
 Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
 #Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Hinge Joint"),
@@ -66,20 +67,53 @@ Members = [
 Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=4, Start_Node=Points[0], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
 ] # square cross section - 0.3 x 0.3, units N, m
 
 
 Loads = [
 #NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
-NeumanBC(type="PL", Magnitude=-30600, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
+NeumanBC(type="PL", Magnitude=-60600, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
 #NeumanBC(type="NL", Magnitude=-10, AssignedTo="Node 2", Members = Members, Nodes = Points)
 ]
+
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 7)
 #"""
 
 
+"""
+Points = [
+Node(Node_Number=1, xcoordinate=0, ycoordinate=0, Support_Condition="Fixed Support"),
+#Node(Node_Number=2, xcoordinate=5, ycoordinate=0, Support_Condition="Hinge Joint"),
+Node(Node_Number=2, xcoordinate=0, ycoordinate=5, Support_Condition="Rigid Joint"),
+Node(Node_Number=3, xcoordinate=5, ycoordinate=5, Support_Condition="Fixed Support"),
+#Node(Node_Number=4, xcoordinate=5, ycoordinate=0, Support_Condition="Hinged Support")
+]
+
+#Coupling = [
+#Couple_Nodes(Main_Node=Points[1], Dependent_Node=Points[2], xDof=True, yDof=True, RotationDof=False),
+#]
 
 
-Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 4)
+Members = [
+Member(Beam_Number=1, Start_Node=Points[0], End_Node=Points[1], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+Member(Beam_Number=2, Start_Node=Points[1], End_Node=Points[2], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+#Member(Beam_Number=3, Start_Node=Points[2], End_Node=Points[3], Area=0.09, Youngs_Modulus=200000000, Moment_of_Inertia=0.000675),
+] # square cross section - 0.3 x 0.3, units N, m
+
+
+Loads = [
+#NeumanBC(type="UDL", Magnitude=10, Distance1= 2, Distance2= 6, AssignedTo="Member 1", Members = Members),
+NeumanBC(type="PL", Magnitude=-256000, Distance1= 2.5, AssignedTo="Member 2", Members = Members),
+#NeumanBC(type="NL", Magnitude=-10, AssignedTo="Node 2", Members = Members, Nodes = Points)
+]
+
+Points, Members, Loads = divide_into_finite_elements(Points, Members, Loads, 7)
+"""
+
+
+
+
 
 
 #main Model part - Main mode part includes sub model part
@@ -93,6 +127,7 @@ Comparision1 = Comparision(MainModel = MemberRes1, Model2 = SecondOrderMemberRes
 DynamicResponse1 = DynamicGlobalResponse(Points = Points, Members = Members, Loads = Loads)
 SecondOrderSensitivity1 = SecondOrderSensitivity(Points = Points, Members = Members, Loads = Loads)
 Senstivity1 = Senstivity(Points = Points, Members = Members, Loads = Loads)
+ComparisionSensitivity1 = ComparisionSensitivity(Points = Points, Members = Members, Loads = Loads)
 ApproximatedSecondOrderAnalysis1 = ApproximatedSecondOrderAnalysis(Points = Points, Members = Members, Loads = Loads)
 ApproximatedAnalysisDisplacement1 = ApproximatedAnalysisDisplacement(Points = Points, Members = Members, Loads = Loads )
 StrainEnergy1 = StrainEnergy(Points = Points, Members = Members, Loads = Loads)
@@ -107,17 +142,21 @@ Model1.PlotGlobalModel()
 
 SecondOrderResponse1.PlotEigenMode(EigenModeNo = 1, Solver="eigsh", scale_factor = 1)
 #FiniteDifferenceSensitivity1.Members_All_Sensitivity()
-
+ComparisionSensitivity1.AnlSimpson_Vs_FDSimpson()
+#ComparisionSensitivity1.AnlSimpson_Vs_FDNonLinear()
 
 
 #print("FD_1_1",FiniteDifferenceSensitivity1.FiniteDifferenceFirstOrderLinearBendingSensitivity(MemberNumber=7, scale=0.000000000001))
 #print("FD_2_1",FiniteDifferenceSensitivity1.FiniteDifferenceSecondOrderLinearBendingSensitivity(MemberNumber=7, scale=0.000000000001))
-print("FD_2_1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",FiniteDifferenceSensitivity1.FiniteDifferenceApproximatedSecondOrderBendingSensitivity(MemberNumber=9, scale=0.000000000001))
+#print("FD_2_1.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",FiniteDifferenceSensitivity1.FiniteDifferenceApproximatedSecondOrderBendingSensitivity(MemberNumber=7, scale=0.000000000001))
+#print("FD_2_1.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",FiniteDifferenceSensitivity1.FiniteDifferenceSimpsonsApproximatedSecondOrderBendingSensitivity(MemberNumber=7, scale=0.000000000001))
 #print("FD_2_2_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",FiniteDifferenceSensitivity1.FiniteDifferenceSecondOrderNonLinearBendingSensitivity(MemberNumber=7, scale=0.000000000001))
 #LinearSensitivity = Senstivity1.BendingMemberSensitivity(MemberNumber=7, scale=0.000000000001)
 #print("Anl_1_1", Senstivity1.BendingMemberSensitivity(MemberNumber=3, scale=0.000000000001))
 #print("Anl_2_1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",SecondOrderSensitivity1.GlobalSecondOrderBendingSensitivity(MemberNumber=7, scale=0.000000000001))
-print("Anl_2_2.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",SecondOrderSensitivity1.try2SecondOrderPartSensitivity(MemberNumber=9, scale = 0.000000000001))
+#print("Anl_2_2.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",SecondOrderSensitivity1.try2SecondOrderPartSensitivity(MemberNumber=9, scale = 0.000000000001))
+#print("Anl_2_2.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",SecondOrderSensitivity1.SimposonsApproximatedSecondOrderSensitivity(MemberNumber=7, scale = 0.000000000001))
+
 #print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", SecondOrderSensitivity1.try3(7, LinearSensitivity, scale=0.000000000001))
 #sum = (Senstivity1.BendingMemberSensitivity(MemberNumber=3, scale=0.000000000001)  + SecondOrderSensitivity1.SecondOrderPartBendingSensitivity(MemberNumber=3, scale=0.000000000001))
 
@@ -128,7 +167,7 @@ print("Anl_2_2.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",SecondOrderSensitivity1
 
 #print(np.round(ApproximatedSecondOrderAnalysis1.CalculateModifiedOrthogonalStiffnessDifferenceMatrix().real, 2))
 #ApproximatedSecondOrderAnalysis1.checkcorrectness()
-#ApproximatedSecondOrderAnalysis1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 14, Direction = "y", division =10)
+#ApproximatedSecondOrderAnalysis1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 12, Direction = "y", division =10)
 #ApproximatedAnalysisDisplacement1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 9, Direction = "y", division =10)
 
 #Comparision1.PlotLoadDisplacementCurveComparison(NodeNumber = 15, Direction = "y", division =20)
@@ -136,10 +175,11 @@ print("Anl_2_2.1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",SecondOrderSensitivity1
 #print(ApproximatedSecondOrderAnalysis1.ApproximatedSecondOrderDisplacementLocal())
 #print(ApproximatedSecondOrderAnalysis1.CalculateApproximatedValueDisplacement())
 
-print("Linear Strain Energy",StrainEnergy1.CalculateLinearStrainEnergy())
-print("Linearized Strain Energy",StrainEnergy1.CalculateLinearizedStrainEnergy())
-print("Approximated NonLinear Strain Energy",StrainEnergy1.CalculateApproximatedNonlinearStrainEnergy())
-print("Finite DIfference NonLinear Strain Energy",StrainEnergy1.CalculateFiniteDifferenceNonLinearStrainEnergy())
+#print("Linear Strain Energy",StrainEnergy1.CalculateLinearStrainEnergy())
+#print("Linearized Strain Energy",StrainEnergy1.CalculateLinearizedStrainEnergy())
+#print("Approximated NonLinear Strain Energy",StrainEnergy1.CalculateApproximatedNonlinearStrainEnergy())
+#print("Simposons Approximated Strain Energy", StrainEnergy1.CalculateSimpsonsApproximatedNonLinearStrainEnergy())
+#print("Finite DIfference NonLinear Strain Energy",StrainEnergy1.CalculateFiniteDifferenceNonLinearStrainEnergy())
 
 #print("Completed Necessary")
 #print("Starting Additional")
@@ -177,7 +217,7 @@ print("Finite DIfference NonLinear Strain Energy",StrainEnergy1.CalculateFiniteD
 #SecondOrderMemberResponse1.PlotGlobalSFD(show_structure=True)
 #print(SecondOrderResponse1.BucklingEigenLoad())
 #SecondOrderResponse1.PlotEigenMode(EigenModeNo = 3, Solver="eigsh", scale_factor = 1)
-#SecondOrderResponse1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 10, Direction = "y", LoadFactor = None, division =20)
+SecondOrderResponse1.PlotSecondOrderLoadDisplacementCurve(NodeNumber = 12, Direction = "y", LoadFactor = None, division =10)
 #print(SecondOrderResponse1.SecondOrderDisplacementVector(iteration_steps=5))
 #SecondOrderMemberResponse1.PlotMemberBMD(1)
 #SecondOrderMemberResponse1.PlotGlobalBMD(show_structure=True)
@@ -190,5 +230,5 @@ print("Finite DIfference NonLinear Strain Energy",StrainEnergy1.CalculateFiniteD
 
 
 #Comparision1.PlotGlobalBMDComparison()
-#Comparision1.PlotGlobalDeflectionComparison(scale_factor = 1)
-#Comparision1.PlotLoadDisplacementCurveComparison(NodeNumber = 10, Direction = "y", division =20)
+#Comparision1.PlotGlobalDeflectionComparison(scale_factor = 0.75)
+Comparision1.PlotLoadDisplacementCurveComparison(NodeNumber = 12, Direction = "y", division =20)

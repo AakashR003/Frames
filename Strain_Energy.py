@@ -56,36 +56,28 @@ class StrainEnergy(ApproximatedSecondOrderAnalysis):
         
         return strain_energy
     
-    def CalculateApproximatedNonlinearStrainEnergy(self):
+    def CalculateSimpsonsApproximatedNonLinearStrainEnergy(self):
 
-        """ calculate strain enery at critical point """
-        #LoadFactor = self.BucklingEigenLoad()[0] * 0.8
-        LoadFactor = 1
+        F2 = np.array(self.ForceVector())
+        U2 = self.SecondOrderDisplacementVector(iteration_steps=5)
+    
+        
         for i in range(len(self.Loads)):
-            self.Loads[i].Magnitude = self.Loads[i].Magnitude * LoadFactor
+            self.Loads[i].Magnitude = self.Loads[i].Magnitude / 2
         
-        self.SetModifiedValues()
-        Force_vector = self.ForceVector()
+        U1 = self.SecondOrderDisplacementVector(iteration_steps=5)
         
-        #Linear part
-        linear_model = FirstOrderGlobalResponse(Points = self.Points, Members = self.Members, Loads = self.Loads)
-        LinearPart_displacement_vector = linear_model.DisplacementVector()
-        Linear_partStrainEnergy = 0.5 * np.dot(LinearPart_displacement_vector, np.transpose(Force_vector))
+        for i in range(len(self.Loads)):
+            self.Loads[i].Magnitude = self.Loads[i].Magnitude * 2
+        
+        
 
-        #NonLinear Part 
-        differencedisplacement = self.SecondOderDisplacement - LinearPart_displacement_vector
-        
-        #nonlinearpart_strain_energy = 1/3*np.dot(differencedisplacement, np.transpose(Force_vector))
-        nonlinearpart_strain_energy = 1/3*np.dot(self.CalculateApproximatedValueDisplacement(ReturnNonlinearDisplacement=True), np.transpose(Force_vector))
-        #nonlinearpart_strain_energy = 2/3*np.dot(self.CalculateApproximatedValueDisplacement(ReturnNonlinearDisplacement=True), np.transpose(Force_vector))
-        
-        rect_area = np.dot(self.SecondOderDisplacement, np.transpose(Force_vector)) # we are like computing complementaory strain energy, then subtracting with reactangle area
-        strain_energy1 = rect_area - nonlinearpart_strain_energy - Linear_partStrainEnergy #use 13 for nonlinear strain energy
-        #print("Rect Area_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa", rect_area, strain_energy1)
-        for i in range(len(self.Loads)):
-            self.Loads[i].Magnitude = self.Loads[i].Magnitude / LoadFactor
-        
-        return strain_energy1 #Linear_partStrainEnergy + nonlinearpart_strain_energy
+        ComplimentaryStrainEnergy = np.dot(F2/6, np.transpose((4*U1 + U2)))
+        rectarea = np.dot(F2, U2)
+
+        StrainEnergy = rectarea - ComplimentaryStrainEnergy 
+
+        return StrainEnergy
     
     def CalculateFiniteDifferenceNonLinearStrainEnergy(self):
         """
